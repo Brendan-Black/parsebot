@@ -1,7 +1,9 @@
 package black.parsebot.service;
 
 import black.parsebot.config.AppConfig;
-import black.parsebot.model.RawData;
+import black.parsebot.model.raw.RawData;
+import black.parsebot.model.raw.RawFileData;
+import black.parsebot.model.raw.RawMailboxData;
 import black.parsebot.model.TransformedData;
 import black.parsebot.parser.DataParser;
 import black.parsebot.reader.FileSystemReader;
@@ -71,16 +73,18 @@ public class ParseBotService {
     }
 
     private void onSuccess(RawData raw) {
-        switch (raw.getSource()) {
-            case FILE_SYSTEM -> fileReader.moveToSuccess(raw.getName());
-            case MAILBOX -> mailReader.moveToFolder(raw.getSourceMessage(), config.getMailSuccessFolder());
+        if (raw instanceof RawFileData) {
+            fileReader.moveToSuccess(raw.getName());
+        } else if (raw instanceof RawMailboxData mailboxData) {
+            mailReader.moveToFolder(mailboxData.getSourceMessage(), config.getMailSuccessFolder());
         }
     }
 
     private void onFailure(RawData raw) {
-        switch (raw.getSource()) {
-            case FILE_SYSTEM -> fileReader.moveToFailure(raw.getName());
-            case MAILBOX -> mailReader.moveToFolder(raw.getSourceMessage(), config.getMailFailureFolder());
+        if (raw instanceof RawFileData) {
+            fileReader.moveToFailure(raw.getName());
+        } else if (raw instanceof RawMailboxData mailboxData) {
+            mailReader.moveToFolder(mailboxData.getSourceMessage(), config.getMailFailureFolder());
         }
     }
 }

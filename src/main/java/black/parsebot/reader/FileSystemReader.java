@@ -1,7 +1,7 @@
 package black.parsebot.reader;
 
 import black.parsebot.config.AppConfig;
-import black.parsebot.model.RawData;
+import black.parsebot.model.raw.RawFileData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,8 +31,8 @@ public class FileSystemReader {
         this.failureDirectory = inputDirectory.resolve("failed");
     }
 
-    public List<RawData> read() {
-        List<RawData> results = new ArrayList<>();
+    public List<RawFileData> read() {
+        List<RawFileData> results = new ArrayList<>();
         sourceFiles.clear();
 
         if (!Files.isDirectory(inputDirectory)) {
@@ -54,7 +54,7 @@ public class FileSystemReader {
                 byte[] content = Files.readAllBytes(file);
                 String name = file.getFileName().toString();
                 sourceFiles.put(name, file);
-                results.add(new RawData(name, content, RawData.Source.FILE_SYSTEM, null));
+                results.add(new RawFileData(name, content));
             }
         } catch (IOException e) {
             log.error("Error reading from input directory: {}", inputDirectory, e);

@@ -1,7 +1,7 @@
 package black.parsebot.reader;
 
 import black.parsebot.config.AppConfig;
-import black.parsebot.model.RawData;
+import black.parsebot.model.raw.RawMailboxData;
 import jakarta.mail.*;
 import jakarta.mail.internet.MimeMultipart;
 import org.slf4j.Logger;
@@ -23,8 +23,8 @@ public class MailboxReader {
         this.config = config;
     }
 
-    public List<RawData> read() {
-        List<RawData> results = new ArrayList<>();
+    public List<RawMailboxData> read() {
+        List<RawMailboxData> results = new ArrayList<>();
 
         if (config.getMailHost().isBlank()) {
             log.debug("Mail host not configured, skipping mailbox read");
@@ -52,7 +52,7 @@ public class MailboxReader {
             for (Message message : messages) {
                 String subject = message.getSubject();
                 byte[] content = extractContent(message);
-                results.add(new RawData(subject, content, RawData.Source.MAILBOX, message));
+                results.add(new RawMailboxData(subject, content, message));
             }
         } catch (Exception e) {
             log.error("Error reading mailbox", e);
