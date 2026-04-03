@@ -41,9 +41,14 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        String command = args.length > 0 ? args[0] : "install";
-        boolean dryRun = List.of(args).contains("--dry-run");
+        List<String> argList = List.of(args);
+        boolean dryRun = argList.contains("--dry-run");
         Path exePath = resolveExePath(args);
+
+        String command = argList.stream()
+                .filter(a -> !a.startsWith("--"))
+                .findFirst()
+                .orElse("install");
 
         switch (command) {
             case "install" -> install(exePath, dryRun);

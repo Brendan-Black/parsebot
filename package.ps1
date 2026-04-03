@@ -19,12 +19,23 @@ $subprojects = @(
 
 # --- Resolve JDK path via Gradle toolchain ---
 Write-Host "Resolving JDK 25 toolchain path..."
+$ErrorActionPreference = "Continue"
 $toolchainOutput = & ./gradlew -q javaToolchains 2>&1 | Out-String
-$jdkPath = ($toolchainOutput |
-    Select-String -Pattern "^\s+\|.*Location:\s+(.+)$" -AllMatches).Matches |
-    ForEach-Object { $_.Groups[1].Value.Trim() } |
-    Where-Object { Test-Path (Join-Path $_ "bin/jpackage.exe") } |
-    Select-Object -First 1
+$ErrorActionPreference = "Stop"
+$lines = $toolchainOutput -split "`r?`n"
+$jdkPath = $null
+$inJdk25Block = $false
+foreach ($line in $lines) {
+    if ($line -match "JDK 25") { $inJdk25Block = $true }
+    elseif ($line -match "^\s*$" -or $line -match "^\s+\+") { $inJdk25Block = $false }
+    if ($inJdk25Block -and $line -match "^\s+\|\s+Location:\s+(.+)$") {
+        $candidate = $Matches[1].Trim()
+        if (Test-Path (Join-Path $candidate "bin/jpackage.exe")) {
+            $jdkPath = $candidate
+            break
+        }
+    }
+}
 
 if (-not $jdkPath) {
     Write-Error "Could not locate a JDK with jpackage via Gradle toolchains."
@@ -36,7 +47,9 @@ Write-Host "Using jpackage: $jpackage"
 
 # --- Build all subprojects ---
 Write-Host "`nBuilding project..."
+$ErrorActionPreference = "Continue"
 & ./gradlew clean build
+$ErrorActionPreference = "Stop"
 if ($LASTEXITCODE -ne 0) { Write-Error "Gradle build failed."; exit 1 }
 
 # --- Prepare output directory ---
@@ -60,18 +73,21 @@ foreach ($proj in $subprojects) {
 
     $depsDir = "$name/build/dependencies"
     if (Test-Path $depsDir) { Remove-Item -Recurse -Force $depsDir }
+    $ErrorActionPreference = "Continue"
     & ./gradlew ":${name}:copyDependencies" 2>$null
+    $ErrorActionPreference = "Stop"
     if (($LASTEXITCODE -eq 0) -and (Test-Path $depsDir)) {
         Copy-Item "$depsDir/*.jar" $inputDir -ErrorAction SilentlyContinue
     }
 
     $jpackageArgs = @(
-        "--type",       "app-image"
-        "--name",       $name
-        "--input",      $inputDir
-        "--main-jar",   $proj.MainJar
-        "--main-class", $proj.MainClass
-        "--dest",       $OutputDir
+        "--type",        "app-image"
+        "--name",        $name
+        "--input",       $inputDir
+        "--main-jar",    $proj.MainJar
+        "--main-class",  $proj.MainClass
+        "--dest",        $OutputDir
+        "--win-console"
     )
 
     Write-Host "Running: jpackage $($jpackageArgs -join ' ')"
