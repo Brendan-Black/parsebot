@@ -1,8 +1,6 @@
 package black.parsebot.installer;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -190,34 +188,36 @@ public class Main {
         int formHeight = buttonY + 80;
         ps.append(String.format("$form.ClientSize = New-Object System.Drawing.Size(540,%d)\n", formHeight));
 
-        ps.append("$result = $form.ShowDialog()\n");
-        ps.append("if ($result -ne [System.Windows.Forms.DialogResult]::OK) { Write-Output 'CANCELLED'; exit }\n");
-
-        // Output values as key=value lines
-        for (int i = 0; i < keys.size(); i++) {
-            ps.append(String.format("Write-Output ('%s=' + $txt%d.Text)\n", keys.get(i), i));
-        }
-
-        // Write script to a temp file and run via -File to avoid argument length/escaping issues
+        // Write results to a temp file so we don't depend on stdout piping
         try {
+            Path resultFile = Files.createTempFile("parsebot-result-", ".txt");
+            resultFile.toFile().deleteOnExit();
+            String resultPath = resultFile.toString().replace("\\", "\\\\");
+
+            ps.append("$form.TopMost = $true\n");
+            ps.append("$result = $form.ShowDialog()\n");
+            ps.append(String.format(
+                    "if ($result -ne [System.Windows.Forms.DialogResult]::OK) { Set-Content -Path '%s' -Value 'CANCELLED'; exit }\n",
+                    resultPath));
+
+            ps.append(String.format("$out = @()\n"));
+            for (int i = 0; i < keys.size(); i++) {
+                ps.append(String.format("$out += '%s=' + $txt%d.Text\n", keys.get(i), i));
+            }
+            ps.append(String.format("Set-Content -Path '%s' -Value ($out -join \"`n\")\n", resultPath));
+
             Path scriptFile = Files.createTempFile("parsebot-installer-", ".ps1");
             Files.writeString(scriptFile, ps.toString());
             scriptFile.toFile().deleteOnExit();
 
             Process proc = new ProcessBuilder(
                     "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptFile.toString())
-                    .redirectErrorStream(true)
+                    .inheritIO()
                     .start();
 
-            List<String> lines = new ArrayList<>();
-            try (var reader = new BufferedReader(new InputStreamReader(proc.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    lines.add(line);
-                }
-            }
-
             int rc = proc.waitFor();
+
+            List<String> lines = Files.readAllLines(resultFile);
             if (rc != 0 || lines.isEmpty() || "CANCELLED".equals(lines.getFirst())) {
                 return null;
             }

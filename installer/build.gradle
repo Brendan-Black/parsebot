@@ -25,3 +25,8 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+tasks.named('run') {
+    standardInput = System.in
+    jvmArgs += '-Dconsole.attached=false'
+}
