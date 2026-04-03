@@ -17,18 +17,16 @@ Filesystem and SFTP input sources are also supported as alternatives to email.
 
 ## Architecture
 
-The service is organized as a pipeline with clearly separated stages:
+ParseBot is written in Java 25 and organized as a pipeline with clearly separated stages:
 
-| Stage | Component | Responsibility |
-|-------|-----------|----------------|
-| **Read** | `MailboxReader`, `FileSystemReader`, `SftpReader` | Poll a data source and return raw documents |
-| **Model** | `RawData` (sealed hierarchy) | Carry document bytes and source metadata through the pipeline |
-| **Parse** | `DataParser`, `ClaudeClient` | Extract PDFs, call the Claude Messages API with reference CSVs, capture the structured response |
-| **Transform** | `TransformedData` | Pair a sanitized filename with the JSON byte payload |
-| **Write** | `SftpWriter`, `MailboxWriter`, `FileSystemWriter` | Deliver results to their destination and route source documents to success/failure folders |
-| **Orchestrate** | `ParseBotService` | Wire the stages together, handle per-item errors, and log outcomes |
+| Stage | Responsibility |
+|-------|----------------|
+| **Read** | Poll a data source (email, filesystem, or SFTP) and return raw documents |
+| **Parse** | Extract PDFs, call the Claude Messages API with reference CSVs, and capture the structured response |
+| **Write** | Deliver JSON results to their destination and route source documents to success/failure folders |
+| **Orchestrate** | Wire the stages together, handle per-item errors, and log outcomes |
 
-`Main` starts a `ScheduledExecutorService` that invokes the service on a fixed interval and registers a shutdown hook for graceful teardown.
+The service runs on a scheduled interval with graceful shutdown handling.
 
 ## Configuration
 
@@ -57,13 +55,13 @@ The core daemon. A PowerShell packaging script (`package.ps1`) uses `jpackage` t
 
 ### Installer
 
-A companion CLI tool packaged the same way under `dist/installer/`. It provides three commands:
+A companion tool packaged the same way. Double-clicking the installer opens a GUI that walks the user through setup:
 
-| Command | Effect |
-|---------|--------|
-| `install` | Launches a PowerShell WinForms dialog collecting all 20 configuration fields, then registers ParseBot as an auto-start Windows service via `sc.exe`, injecting settings as system properties on the service binary path. |
-| `uninstall` | Stops and removes the Windows service. |
-| `status` | Queries and prints the current service state. |
+1. A launcher dialog asks whether to **Install** or **Uninstall**.
+2. On install, a configuration dialog collects all required settings (mail server, API key, SFTP credentials, etc.).
+3. The service is registered, configured, and started automatically.
+
+The installer may also be invoked from the command line for scripted or unattended workflows. See `README.md` for details.
 
 ## Dependencies
 
