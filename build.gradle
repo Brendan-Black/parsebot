@@ -1,36 +1,4 @@
-plugins {
-    id 'java'
-    id 'application'
-}
-
-group = 'black.parsebot'
-version = '0.1.0'
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
-    }
-}
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    implementation 'jakarta.mail:jakarta.mail-api:2.1.3'
-    implementation 'org.eclipse.angus:angus-mail:2.0.3'
-    implementation 'com.jcraft:jsch:0.1.55'
-    implementation 'org.slf4j:slf4j-api:2.0.16'
-    implementation 'ch.qos.logback:logback-classic:1.5.16'
-
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-application {
-    mainClass = 'black.parsebot.Main'
-}
-
-tasks.named('test') {
-    useJUnitPlatform()
+subprojects {
+    group = 'black.parsebot'
+    version = '0.1.0'
 }
