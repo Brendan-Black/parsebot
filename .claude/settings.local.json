@@ -3,7 +3,9 @@
     "allow": [
       "Bash(./gradlew build:*)",
       "Bash(./gradlew run:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(./gradlew :service:build :installer:build)",
+      "Bash(./gradlew :service:dependencies --configuration runtimeClasspath)"
     ]
   }
 }

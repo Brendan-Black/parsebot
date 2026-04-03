@@ -1,4 +1,11 @@
 subprojects {
     group = 'black.parsebot'
     version = '0.1.0'
+
+    pluginManager.withPlugin('java') {
+        tasks.register('copyDependencies', Copy) {
+            from configurations.runtimeClasspath
+            into layout.buildDirectory.dir('dependencies')
+        }
+    }
 }
