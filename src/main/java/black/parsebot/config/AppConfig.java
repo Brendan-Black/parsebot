@@ -11,110 +11,156 @@ import java.util.Properties;
 
 public class AppConfig {
 
-    private static final Logger log = LoggerFactory.getLogger(AppConfig.class);
-    private static final String CONFIG_FILE = "parsebot.properties";
+	private static final Logger log = LoggerFactory.getLogger(AppConfig.class);
+	private static final String CONFIG_FILE = "parsebot.properties";
 
-    private final Properties props;
+	private final Properties props;
+	private final SftpConfig sftpConfig;
+	private final MailConfig mailConfig;
+	private final FileSystemConfig fileSystemConfig;
 
-    private AppConfig(Properties props) {
-        this.props = props;
-    }
+	private AppConfig(Properties props) {
+		this.props = props;
+		this.sftpConfig = new SftpConfig(props);
+		this.mailConfig = new MailConfig(props);
+		this.fileSystemConfig = new FileSystemConfig(props);
+	}
 
-    public static AppConfig load() {
-        Properties props = new Properties();
-        Path externalConfig = Path.of(CONFIG_FILE);
+	public static AppConfig load() {
+		Properties props = new Properties();
+		Path externalConfig = Path.of(CONFIG_FILE);
 
-        if (Files.exists(externalConfig)) {
-            try (InputStream in = Files.newInputStream(externalConfig)) {
-                props.load(in);
-                log.info("Loaded config from {}", externalConfig.toAbsolutePath());
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to load config: " + externalConfig, e);
-            }
-        } else {
-            try (InputStream in = AppConfig.class.getClassLoader().getResourceAsStream(CONFIG_FILE)) {
-                if (in != null) {
-                    props.load(in);
-                    log.info("Loaded config from classpath");
-                } else {
-                    log.warn("No config file found, using defaults");
-                }
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to load classpath config", e);
-            }
-        }
+		if (Files.exists(externalConfig)) {
+			try (InputStream in = Files.newInputStream(externalConfig)) {
+				props.load(in);
+				log.info("Loaded config from {}", externalConfig.toAbsolutePath());
+			} catch (IOException e) {
+				throw new RuntimeException("Failed to load config: " + externalConfig, e);
+			}
+		} else {
+			try (InputStream in = AppConfig.class.getClassLoader().getResourceAsStream(CONFIG_FILE)) {
+				if (in != null) {
+					props.load(in);
+					log.info("Loaded config from classpath");
+				} else {
+					log.warn("No config file found, using defaults");
+				}
+			} catch (IOException e) {
+				throw new RuntimeException("Failed to load classpath config", e);
+			}
+		}
 
-        return new AppConfig(props);
-    }
+		return new AppConfig(props);
+	}
 
-    public long getPollIntervalSeconds() {
-        return Long.parseLong(props.getProperty("poll.interval.seconds", "60"));
-    }
+	public long getPollIntervalSeconds() {
+		return Long.parseLong(props.getProperty("poll.interval.seconds", "60"));
+	}
 
-    // File system reader settings
-    public String getInputDirectory() {
-        return props.getProperty("input.directory", "./input");
-    }
+	public SftpConfig getSftpConfig() {
+		return sftpConfig;
+	}
 
-    public String getFilePattern() {
-        return props.getProperty("input.file.pattern", "*.txt");
-    }
+	public MailConfig getMailConfig() {
+		return mailConfig;
+	}
 
-    // Mail settings
-    public String getMailHost() {
-        return props.getProperty("mail.host", "");
-    }
+	public FileSystemConfig getFileSystemConfig() {
+		return fileSystemConfig;
+	}
 
-    public int getMailPort() {
-        return Integer.parseInt(props.getProperty("mail.port", "993"));
-    }
+	public static class SftpConfig {
 
-    public String getMailUsername() {
-        return props.getProperty("mail.username", "");
-    }
+		private final Properties props;
 
-    public String getMailPassword() {
-        return props.getProperty("mail.password", "");
-    }
+		private SftpConfig(Properties props) {
+			this.props = props;
+		}
 
-    public String getMailFolder() {
-        return props.getProperty("mail.folder", "INBOX");
-    }
+		public String getHost() {
+			return props.getProperty("sftp.host", "");
+		}
 
-    public String getMailSuccessFolder() {
-        return props.getProperty("mail.folder.success", "Processed");
-    }
+		public int getPort() {
+			return Integer.parseInt(props.getProperty("sftp.port", "22"));
+		}
 
-    public String getMailFailureFolder() {
-        return props.getProperty("mail.folder.failed", "Failed");
-    }
+		public String getUsername() {
+			return props.getProperty("sftp.username", "");
+		}
 
-    public String getMailProtocol() {
-        return props.getProperty("mail.protocol", "imaps");
-    }
+		public String getPassword() {
+			return props.getProperty("sftp.password", "");
+		}
 
-    // SFTP settings
-    public String getSftpHost() {
-        return props.getProperty("sftp.host", "");
-    }
+		public String getPrivateKey() {
+			return props.getProperty("sftp.private.key", "");
+		}
 
-    public int getSftpPort() {
-        return Integer.parseInt(props.getProperty("sftp.port", "22"));
-    }
+		public String getRemoteDirectory() {
+			return props.getProperty("sftp.remote.directory", "/upload");
+		}
 
-    public String getSftpUsername() {
-        return props.getProperty("sftp.username", "");
-    }
+		public String getProtocol() {
+			return props.getProperty("sftp.remote.protocol", "sftp");
+		}
+	}
 
-    public String getSftpPassword() {
-        return props.getProperty("sftp.password", "");
-    }
+	public static class MailConfig {
 
-    public String getSftpPrivateKey() {
-        return props.getProperty("sftp.private.key", "");
-    }
+		private final Properties props;
 
-    public String getSftpRemoteDirectory() {
-        return props.getProperty("sftp.remote.directory", "/upload");
-    }
+		private MailConfig(Properties props) {
+			this.props = props;
+		}
+
+		public String getHost() {
+			return props.getProperty("mail.host", "");
+		}
+
+		public int getPort() {
+			return Integer.parseInt(props.getProperty("mail.port", "993"));
+		}
+
+		public String getUsername() {
+			return props.getProperty("mail.username", "");
+		}
+
+		public String getPassword() {
+			return props.getProperty("mail.password", "");
+		}
+
+		public String getFolder() {
+			return props.getProperty("mail.folder", "INBOX");
+		}
+
+		public String getSuccessFolder() {
+			return props.getProperty("mail.folder.success", "Processed");
+		}
+
+		public String getFailureFolder() {
+			return props.getProperty("mail.folder.failed", "Failed");
+		}
+
+		public String getProtocol() {
+			return props.getProperty("mail.protocol", "imaps");
+		}
+	}
+
+	public static class FileSystemConfig {
+
+		private final Properties props;
+
+		private FileSystemConfig(Properties props) {
+			this.props = props;
+		}
+
+		public String getCenter() {
+			return props.getProperty("input.directory", "./input");
+		}
+
+		public String getFilePattern() {
+			return props.getProperty("input.file.pattern", "*.txt");
+		}
+	}
 }

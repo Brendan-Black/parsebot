@@ -20,8 +20,8 @@ public class FileSystemReader {
     private final String filePattern;
 
     public FileSystemReader(AppConfig config) {
-        this.inputDirectory = Path.of(config.getInputDirectory());
-        this.filePattern = config.getFilePattern();
+        this.inputDirectory = Path.of(config.getFileSystemConfig().getCenter());
+        this.filePattern = config.getFileSystemConfig().getFilePattern();
     }
 
     public List<RawFileData> read() {

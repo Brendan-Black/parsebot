@@ -35,6 +35,7 @@ public class Main {
                 scheduler.shutdownNow();
                 Thread.currentThread().interrupt();
             }
+            service.close();
         }));
     }
 }

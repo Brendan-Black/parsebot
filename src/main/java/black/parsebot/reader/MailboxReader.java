@@ -1,6 +1,6 @@
 package black.parsebot.reader;
 
-import black.parsebot.config.AppConfig;
+import black.parsebot.config.AppConfig.MailConfig;
 import black.parsebot.model.raw.RawMailboxData;
 import jakarta.mail.*;
 import jakarta.mail.internet.MimeMultipart;
@@ -15,39 +15,51 @@ public class MailboxReader {
 
     private static final Logger log = LoggerFactory.getLogger(MailboxReader.class);
 
-    private final AppConfig config;
+    private final MailConfig config;
     private Store store;
     private Folder sourceFolder;
 
-    public MailboxReader(AppConfig config) {
+    public MailboxReader(MailConfig config) {
         this.config = config;
+    }
+
+    public void ensureConnected() throws MessagingException {
+        if (store != null && store.isConnected()
+                && sourceFolder != null && sourceFolder.isOpen()) {
+            return;
+        }
+
+        close();
+
+        Properties mailProps = new Properties();
+        String protocol = config.getProtocol();
+        mailProps.put("mail.store.protocol", protocol);
+        mailProps.put("mail." + protocol + ".host", config.getHost());
+        mailProps.put("mail." + protocol + ".port", String.valueOf(config.getPort()));
+        mailProps.put("mail." + protocol + ".ssl.enable", "true");
+
+        Session session = Session.getInstance(mailProps);
+        store = session.getStore(protocol);
+        store.connect(config.getUsername(), config.getPassword());
+
+        sourceFolder = store.getFolder(config.getFolder());
+        sourceFolder.open(Folder.READ_WRITE);
+        log.info("Connected to mailbox {}", config.getHost());
     }
 
     public List<RawMailboxData> read() {
         List<RawMailboxData> results = new ArrayList<>();
 
-        if (config.getMailHost().isBlank()) {
+        if (config.getHost().isBlank()) {
             log.debug("Mail host not configured, skipping mailbox read");
             return results;
         }
 
-        Properties mailProps = new Properties();
-        String protocol = config.getMailProtocol();
-        mailProps.put("mail.store.protocol", protocol);
-        mailProps.put("mail." + protocol + ".host", config.getMailHost());
-        mailProps.put("mail." + protocol + ".port", String.valueOf(config.getMailPort()));
-        mailProps.put("mail." + protocol + ".ssl.enable", "true");
-
         try {
-            Session session = Session.getInstance(mailProps);
-            store = session.getStore(protocol);
-            store.connect(config.getMailUsername(), config.getMailPassword());
-
-            sourceFolder = store.getFolder(config.getMailFolder());
-            sourceFolder.open(Folder.READ_WRITE);
+            ensureConnected();
 
             Message[] messages = sourceFolder.getMessages();
-            log.info("Found {} message(s) in {}", messages.length, config.getMailFolder());
+            log.info("Found {} message(s) in {}", messages.length, config.getFolder());
 
             for (Message message : messages) {
                 String subject = message.getSubject();
@@ -59,6 +71,23 @@ public class MailboxReader {
         }
 
         return results;
+    }
+
+    public void close() {
+        try {
+            if (sourceFolder != null && sourceFolder.isOpen()) {
+                sourceFolder.close(true);
+            }
+        } catch (MessagingException e) {
+            log.error("Error closing source folder", e);
+        }
+        try {
+            if (store != null && store.isConnected()) {
+                store.close();
+            }
+        } catch (MessagingException e) {
+            log.error("Error closing mail store", e);
+        }
     }
 
     public Store getStore() {

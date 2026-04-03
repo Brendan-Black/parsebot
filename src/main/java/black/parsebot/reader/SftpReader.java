@@ -17,16 +17,16 @@ public class SftpReader {
 
     private static final Logger log = LoggerFactory.getLogger(SftpReader.class);
 
-    private final AppConfig config;
+    private final AppConfig.SftpConfig config;
 
     public SftpReader(AppConfig config) {
-        this.config = config;
+        this.config = config.getSftpConfig();
     }
 
     public List<RawSftpData> read() {
         List<RawSftpData> results = new ArrayList<>();
 
-        if (config.getSftpHost().isBlank()) {
+        if (config.getHost().isBlank()) {
             log.debug("SFTP host not configured, skipping SFTP read");
             return results;
         }
@@ -37,15 +37,15 @@ public class SftpReader {
         try {
             JSch jsch = new JSch();
 
-            String privateKey = config.getSftpPrivateKey();
+            String privateKey = config.getPrivateKey();
             if (!privateKey.isBlank()) {
                 jsch.addIdentity(privateKey);
             }
 
-            session = jsch.getSession(config.getSftpUsername(), config.getSftpHost(), config.getSftpPort());
+            session = jsch.getSession(config.getUsername(), config.getHost(), config.getPort());
 
             if (privateKey.isBlank()) {
-                session.setPassword(config.getSftpPassword());
+                session.setPassword(config.getPassword());
             }
 
             session.setConfig("StrictHostKeyChecking", "no");
@@ -53,7 +53,7 @@ public class SftpReader {
 
             channel = (ChannelSftp) session.openChannel("sftp");
             channel.connect(30_000);
-            channel.cd(config.getSftpRemoteDirectory());
+            channel.cd(config.getRemoteDirectory());
 
             @SuppressWarnings("unchecked")
             Vector<ChannelSftp.LsEntry> entries = channel.ls(".");
@@ -70,7 +70,7 @@ public class SftpReader {
                 results.add(new RawSftpData(name, out.toByteArray()));
             }
 
-            log.info("Read {} file(s) from SFTP {}", results.size(), config.getSftpRemoteDirectory());
+            log.info("Read {} file(s) from SFTP {}", results.size(), config.getRemoteDirectory());
         } catch (Exception e) {
             log.error("SFTP read failed", e);
         } finally {

@@ -22,14 +22,14 @@ public class ParseBotService {
 	private final MailboxWriter mailWriter;
 	private final DataParser parser;
 	private final SftpWriter sftpWriter;
-	private final AppConfig config;
+	private final AppConfig.MailConfig mailConfig;
 
 	public ParseBotService(AppConfig config) {
-		this.config = config;
-		this.mailReader = new MailboxReader(config);
+		this.mailConfig = config.getMailConfig();
+		this.mailReader = new MailboxReader(config.getMailConfig());
 		this.mailWriter = new MailboxWriter(mailReader);
 		this.parser = new DataParser();
-		this.sftpWriter = new SftpWriter(config);
+		this.sftpWriter = new SftpWriter(config.getSftpConfig());
 	}
 
 	public void run() {
@@ -65,18 +65,18 @@ public class ParseBotService {
 			log.info("Pipeline run complete: {} succeeded, {} failed", successCount, failCount);
 		} catch (Exception e) {
 			log.error("Pipeline run failed", e);
-		} finally {
-			if (mailReader.getStore() != null) {
-				new MailboxWriter(mailReader.getStore(), mailReader.getSourceFolder()).close();
-			}
 		}
 	}
 
+	public void close() {
+		mailReader.close();
+	}
+
 	private void onSuccess(RawMailboxData mbd, MailboxWriter mailWriter) {
-		mailWriter.moveToFolder(mbd.getSourceMessage(), config.getMailSuccessFolder());
+		mailWriter.moveToFolder(mbd.getSourceMessage(), mailConfig.getSuccessFolder());
 	}
 
 	private void onFailure(RawMailboxData mbd, MailboxWriter mailWriter) {
-		mailWriter.moveToFolder(mbd.getSourceMessage(), config.getMailFailureFolder());
+		mailWriter.moveToFolder(mbd.getSourceMessage(), mailConfig.getFailureFolder());
 	}
 }
