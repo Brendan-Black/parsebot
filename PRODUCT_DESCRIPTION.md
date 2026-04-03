@@ -30,12 +30,6 @@ The service runs on a scheduled interval with graceful shutdown handling.
 
 ## Configuration
 
-All settings live in a Java properties file (`parsebot.properties`). Values can be supplied from three sources, in priority order:
-
-1. An external file in the working directory.
-2. The classpath-bundled default file.
-3. JVM system properties (`-Dparsebot.<key>=<value>`).
-
 Key configuration groups:
 
 - **Scheduling** -- poll interval.
@@ -60,8 +54,6 @@ A companion tool packaged the same way. Double-clicking the installer opens a GU
 1. A launcher dialog asks whether to **Install** or **Uninstall**.
 2. On install, a configuration dialog collects all required settings (mail server, API key, SFTP credentials, etc.).
 3. The service is registered, configured, and started automatically.
-
-The installer may also be invoked from the command line for scripted or unattended workflows. See `README.md` for details.
 
 ## Dependencies
 
