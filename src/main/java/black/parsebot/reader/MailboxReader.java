@@ -61,33 +61,12 @@ public class MailboxReader {
         return results;
     }
 
-    public void moveToFolder(Message message, String targetFolderName) {
-        try {
-            Folder targetFolder = store.getFolder(targetFolderName);
-            if (!targetFolder.exists()) {
-                targetFolder.create(Folder.HOLDS_MESSAGES);
-                log.info("Created IMAP folder: {}", targetFolderName);
-            }
-
-            sourceFolder.copyMessages(new Message[]{message}, targetFolder);
-            message.setFlag(Flags.Flag.DELETED, true);
-            log.info("Moved message '{}' to {}", message.getSubject(), targetFolderName);
-        } catch (MessagingException e) {
-            log.error("Failed to move message '{}' to {}", message, targetFolderName, e);
-        }
+    public Store getStore() {
+        return store;
     }
 
-    public void close() {
-        try {
-            if (sourceFolder != null && sourceFolder.isOpen()) {
-                sourceFolder.close(true);
-            }
-            if (store != null && store.isConnected()) {
-                store.close();
-            }
-        } catch (MessagingException e) {
-            log.error("Error closing mailbox connection", e);
-        }
+    public Folder getSourceFolder() {
+        return sourceFolder;
     }
 
     private byte[] extractContent(Message message) throws Exception {

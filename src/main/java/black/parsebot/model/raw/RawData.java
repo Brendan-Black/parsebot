@@ -1,7 +1,7 @@
 package black.parsebot.model.raw;
 
 
-public sealed abstract class RawData permits RawFileData, RawMailboxData {
+public sealed abstract class RawData permits RawFileData, RawMailboxData, RawSftpData {
 
     private final String name;
     private final byte[] content;

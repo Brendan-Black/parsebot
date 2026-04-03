@@ -1,90 +1,82 @@
 package black.parsebot.service;
 
-import black.parsebot.config.AppConfig;
-import black.parsebot.model.raw.RawData;
-import black.parsebot.model.raw.RawFileData;
-import black.parsebot.model.raw.RawMailboxData;
-import black.parsebot.model.TransformedData;
-import black.parsebot.parser.DataParser;
-import black.parsebot.reader.FileSystemReader;
-import black.parsebot.reader.MailboxReader;
-import black.parsebot.writer.SftpWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import black.parsebot.config.AppConfig;
+import black.parsebot.model.TransformedData;
+import black.parsebot.model.raw.RawMailboxData;
+import black.parsebot.parser.DataParser;
+import black.parsebot.reader.MailboxReader;
+import black.parsebot.writer.MailboxWriter;
+import black.parsebot.writer.SftpWriter;
+
 public class ParseBotService {
 
-    private static final Logger log = LoggerFactory.getLogger(ParseBotService.class);
+	private static final Logger log = LoggerFactory.getLogger(ParseBotService.class);
 
-    private final FileSystemReader fileReader;
-    private final MailboxReader mailReader;
-    private final DataParser parser;
-    private final SftpWriter writer;
-    private final AppConfig config;
+	private final MailboxReader mailReader;
+	private final MailboxWriter mailWriter;
+	private final DataParser parser;
+	private final SftpWriter sftpWriter;
+	private final AppConfig config;
 
-    public ParseBotService(AppConfig config) {
-        this.config = config;
-        this.fileReader = new FileSystemReader(config);
-        this.mailReader = new MailboxReader(config);
-        this.parser = new DataParser();
-        this.writer = new SftpWriter(config);
-    }
+	public ParseBotService(AppConfig config) {
+		this.config = config;
+		this.mailReader = new MailboxReader(config);
+		this.mailWriter = new MailboxWriter(mailReader);
+		this.parser = new DataParser();
+		this.sftpWriter = new SftpWriter(config);
+	}
 
-    public void run() {
-        try {
-            log.info("Starting pipeline run");
+	public void run() {
+		try {
+			log.info("Starting pipeline run");
 
-            // Collect raw data from all sources
-            List<RawData> rawData = new ArrayList<>();
-            rawData.addAll(fileReader.read());
-            rawData.addAll(mailReader.read());
+			// Collect raw data from all sources
+			List<RawMailboxData> rawData = new ArrayList<>();
+			rawData.addAll(mailReader.read());
 
-            if (rawData.isEmpty()) {
-                log.info("No data to process");
-                return;
-            }
+			if (rawData.isEmpty()) {
+				log.info("No data to process");
+				return;
+			}
 
-            // Process each item individually
-            int successCount = 0;
-            int failCount = 0;
+			// Process each item individually
+			int successCount = 0;
+			int failCount = 0;
 
-            for (RawData raw : rawData) {
-                try {
-                    TransformedData transformed = parser.parse(raw);
-                    writer.write(List.of(transformed));
-                    onSuccess(raw);
-                    successCount++;
-                } catch (Exception e) {
-                    log.error("Failed to process: {}", raw.getName(), e);
-                    onFailure(raw);
-                    failCount++;
-                }
-            }
+			for (RawMailboxData email : rawData) {
+				try {
+					TransformedData transformed = parser.parse(email);
+					sftpWriter.write(List.of(transformed));
+					onSuccess(email, mailWriter);
+					successCount++;
+				} catch (Exception e) {
+					log.error("Failed to process: {}", email.getName(), e);
+					onFailure(email, mailWriter);
+					failCount++;
+				}
+			}
 
-            log.info("Pipeline run complete: {} succeeded, {} failed", successCount, failCount);
-        } catch (Exception e) {
-            log.error("Pipeline run failed", e);
-        } finally {
-            mailReader.close();
-        }
-    }
+			log.info("Pipeline run complete: {} succeeded, {} failed", successCount, failCount);
+		} catch (Exception e) {
+			log.error("Pipeline run failed", e);
+		} finally {
+			if (mailReader.getStore() != null) {
+				new MailboxWriter(mailReader.getStore(), mailReader.getSourceFolder()).close();
+			}
+		}
+	}
 
-    private void onSuccess(RawData raw) {
-        if (raw instanceof RawFileData) {
-            fileReader.moveToSuccess(raw.getName());
-        } else if (raw instanceof RawMailboxData mailboxData) {
-            mailReader.moveToFolder(mailboxData.getSourceMessage(), config.getMailSuccessFolder());
-        }
-    }
+	private void onSuccess(RawMailboxData mbd, MailboxWriter mailWriter) {
+		mailWriter.moveToFolder(mbd.getSourceMessage(), config.getMailSuccessFolder());
+	}
 
-    private void onFailure(RawData raw) {
-        if (raw instanceof RawFileData) {
-            fileReader.moveToFailure(raw.getName());
-        } else if (raw instanceof RawMailboxData mailboxData) {
-            mailReader.moveToFolder(mailboxData.getSourceMessage(), config.getMailFailureFolder());
-        }
-    }
+	private void onFailure(RawMailboxData mbd, MailboxWriter mailWriter) {
+		mailWriter.moveToFolder(mbd.getSourceMessage(), config.getMailFailureFolder());
+	}
 }
