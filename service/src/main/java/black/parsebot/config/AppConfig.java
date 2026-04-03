@@ -50,6 +50,16 @@ public class AppConfig {
 			}
 		}
 
+		// System properties with "parsebot." prefix override file/classpath values.
+		// e.g. -Dparsebot.mail.host=imap.example.com overrides mail.host
+		for (String key : System.getProperties().stringPropertyNames()) {
+			if (key.startsWith("parsebot.")) {
+				String configKey = key.substring("parsebot.".length());
+				props.setProperty(configKey, System.getProperty(key));
+				log.info("Config override from system property: {}", configKey);
+			}
+		}
+
 		return new AppConfig(props);
 	}
 
