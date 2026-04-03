@@ -5,6 +5,7 @@ import black.parsebot.service.ParseBotService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -17,7 +18,13 @@ public class Main {
         log.info("ParseBot starting up");
 
         AppConfig config = AppConfig.load();
-        ParseBotService service = new ParseBotService(config);
+        ParseBotService service;
+        try {
+            service = new ParseBotService(config);
+        } catch (IOException e) {
+            log.error("Failed to initialize ParseBotService", e);
+            return;
+        }
 
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         long intervalSeconds = config.getPollIntervalSeconds();

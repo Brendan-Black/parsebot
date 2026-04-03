@@ -69,6 +69,18 @@ public class AppConfig {
 		return fileSystemConfig;
 	}
 
+	public String getClaudeApiKey() {
+		return props.getProperty("claude.api.key", "");
+	}
+
+	public String getCustomerCsvPath() {
+		return props.getProperty("csv.customers", "customers.csv");
+	}
+
+	public String getProductCsvPath() {
+		return props.getProperty("csv.products", "products.csv");
+	}
+
 	public static class SftpConfig {
 
 		private final Properties props;

@@ -1,5 +1,8 @@
 package black.parsebot.service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import black.parsebot.config.AppConfig;
 import black.parsebot.model.TransformedData;
 import black.parsebot.model.raw.RawMailboxData;
+import black.parsebot.parser.ClaudeClient;
 import black.parsebot.parser.DataParser;
 import black.parsebot.reader.MailboxReader;
 import black.parsebot.writer.MailboxWriter;
@@ -20,21 +24,31 @@ public class ParseBotService {
 
 	private final MailboxReader mailReader;
 	private final MailboxWriter mailWriter;
-	private final DataParser parser;
+	private final ClaudeClient claudeClient;
 	private final SftpWriter sftpWriter;
 	private final AppConfig.MailConfig mailConfig;
+	private final Path customerCsvPath;
+	private final Path productCsvPath;
 
-	public ParseBotService(AppConfig config) {
+	public ParseBotService(AppConfig config) throws IOException {
 		this.mailConfig = config.getMailConfig();
 		this.mailReader = new MailboxReader(config.getMailConfig());
 		this.mailWriter = new MailboxWriter(mailReader);
-		this.parser = new DataParser();
+
+		this.claudeClient = new ClaudeClient(config.getClaudeApiKey());
+		this.customerCsvPath = Path.of(config.getCustomerCsvPath());
+		this.productCsvPath = Path.of(config.getProductCsvPath());
+
 		this.sftpWriter = new SftpWriter(config.getSftpConfig());
 	}
 
 	public void run() {
 		try {
 			log.info("Starting pipeline run");
+
+			String customerCsv = Files.readString(customerCsvPath);
+			String productCsv = Files.readString(productCsvPath);
+			DataParser parser = new DataParser(claudeClient, customerCsv, productCsv);
 
 			// Collect raw data from all sources
 			List<RawMailboxData> rawData = new ArrayList<>();
@@ -51,8 +65,10 @@ public class ParseBotService {
 
 			for (RawMailboxData email : rawData) {
 				try {
-					TransformedData transformed = parser.parse(email);
-					sftpWriter.write(List.of(transformed));
+					List<TransformedData> transformed = parser.parse(email);
+					if (!transformed.isEmpty()) {
+						sftpWriter.write(transformed);
+					}
 					onSuccess(email, mailWriter);
 					successCount++;
 				} catch (Exception e) {
