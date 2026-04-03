@@ -52,11 +52,15 @@ $ErrorActionPreference = "Continue"
 $ErrorActionPreference = "Stop"
 if ($LASTEXITCODE -ne 0) { Write-Error "Gradle build failed."; exit 1 }
 
-# --- Prepare output directory ---
+# --- Prepare output directories ---
+$stageDir = "$OutputDir/ParseBot"
 if (Test-Path $OutputDir) { Remove-Item -Recurse -Force $OutputDir }
-New-Item -ItemType Directory -Path $OutputDir | Out-Null
+New-Item -ItemType Directory -Path $stageDir | Out-Null
 
-# --- Package each subproject ---
+# --- Package each subproject into a temporary location, then merge ---
+$tempDir = "build/packaging/images"
+if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir }
+
 foreach ($proj in $subprojects) {
     $name    = $proj.Name
     $libsDir = "$name/build/libs"
@@ -86,7 +90,7 @@ foreach ($proj in $subprojects) {
         "--input",       $inputDir
         "--main-jar",    $proj.MainJar
         "--main-class",  $proj.MainClass
-        "--dest",        $OutputDir
+        "--dest",        $tempDir
         "--win-console"
     )
 
@@ -97,7 +101,42 @@ foreach ($proj in $subprojects) {
         exit 1
     }
 
-    Write-Host "Packaged $name -> $OutputDir/$name/"
+    Write-Host "Packaged $name"
 }
 
-Write-Host "`nDone. Executables are in '$OutputDir/'."
+# --- Merge both app-images into a single flat folder ---
+Write-Host "`nMerging into single distribution folder..."
+
+# Use the service image as the base (it has the larger runtime)
+$serviceImage = "$tempDir/service"
+Copy-Item -Recurse "$serviceImage/*" $stageDir
+
+# Copy the installer executable alongside the service executable
+$installerExe = "$tempDir/installer/installer.exe"
+if (Test-Path $installerExe) {
+    Copy-Item $installerExe $stageDir
+}
+
+# Copy any installer-only JARs into the app directory
+$installerAppDir = "$tempDir/installer/app"
+if (Test-Path $installerAppDir) {
+    Get-ChildItem "$installerAppDir/*.jar" | ForEach-Object {
+        $dest = Join-Path "$stageDir/app" $_.Name
+        if (-not (Test-Path $dest)) {
+            Copy-Item $_.FullName $dest
+        }
+    }
+    # Copy installer .cfg so the exe can find its main class
+    Get-ChildItem "$installerAppDir/*.cfg" | ForEach-Object {
+        Copy-Item $_.FullName (Join-Path "$stageDir/app" $_.Name)
+    }
+}
+
+# --- Create zip archive ---
+$zipPath = "$OutputDir/ParseBot.zip"
+Write-Host "`nCreating archive: $zipPath"
+Compress-Archive -Path $stageDir -DestinationPath $zipPath -Force
+
+Write-Host "`nDone."
+Write-Host "  Folder: $stageDir/"
+Write-Host "  Zip:    $zipPath"

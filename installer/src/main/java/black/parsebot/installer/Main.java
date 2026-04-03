@@ -48,7 +48,16 @@ public class Main {
         String command = argList.stream()
                 .filter(a -> !a.startsWith("--"))
                 .findFirst()
-                .orElse("install");
+                .orElse(null);
+
+        if (command == null) {
+            // No command given (e.g. double-click) — show launcher dialog
+            command = showLauncherGui();
+            if (command == null) {
+                System.out.println("Cancelled.");
+                System.exit(0);
+            }
+        }
 
         switch (command) {
             case "install" -> install(exePath, dryRun);
@@ -102,8 +111,16 @@ public class Main {
         }
 
         sc("description", SERVICE_NAME, DESCRIPTION);
-        System.out.println(SERVICE_NAME + " installed successfully.");
-        System.out.println("Start it with: sc start " + SERVICE_NAME);
+        sc("failure", SERVICE_NAME, "reset=", "86400", "actions=", "restart/5000/restart/10000/restart/30000");
+        System.out.println(SERVICE_NAME + " installed successfully. Starting...");
+
+        int startRc = sc("start", SERVICE_NAME);
+        if (startRc != 0) {
+            System.err.println("Service installed but failed to start (exit code " + startRc + ").");
+            System.err.println("You can start it manually: sc start " + SERVICE_NAME);
+        } else {
+            System.out.println(SERVICE_NAME + " is running.");
+        }
     }
 
     private static void uninstall() {
@@ -120,6 +137,87 @@ public class Main {
 
     private static void status() {
         sc("query", SERVICE_NAME);
+    }
+
+    /**
+     * Launches a PowerShell WinForms dialog asking the user to Install or Uninstall.
+     * Returns "install", "uninstall", or null if cancelled/closed.
+     */
+    private static String showLauncherGui() {
+        try {
+            Path resultFile = Files.createTempFile("parsebot-launcher-", ".txt");
+            resultFile.toFile().deleteOnExit();
+            String resultPath = resultFile.toString().replace("\\", "\\\\");
+
+            String ps = """
+                    Add-Type -AssemblyName System.Windows.Forms
+                    Add-Type -AssemblyName System.Drawing
+                    [System.Windows.Forms.Application]::EnableVisualStyles()
+
+                    $form = New-Object System.Windows.Forms.Form
+                    $form.Text = 'ParseBot Installer'
+                    $form.StartPosition = 'CenterScreen'
+                    $form.FormBorderStyle = 'FixedDialog'
+                    $form.MaximizeBox = $false
+                    $form.ClientSize = New-Object System.Drawing.Size(320,130)
+                    $form.TopMost = $true
+
+                    $lbl = New-Object System.Windows.Forms.Label
+                    $lbl.Location = New-Object System.Drawing.Point(10,15)
+                    $lbl.Size = New-Object System.Drawing.Size(300,20)
+                    $lbl.Text = 'What would you like to do?'
+                    $form.Controls.Add($lbl)
+
+                    $btnInstall = New-Object System.Windows.Forms.Button
+                    $btnInstall.Location = New-Object System.Drawing.Point(20,50)
+                    $btnInstall.Size = New-Object System.Drawing.Size(130,40)
+                    $btnInstall.Text = 'Install'
+                    $form.Controls.Add($btnInstall)
+
+                    $btnUninstall = New-Object System.Windows.Forms.Button
+                    $btnUninstall.Location = New-Object System.Drawing.Point(170,50)
+                    $btnUninstall.Size = New-Object System.Drawing.Size(130,40)
+                    $btnUninstall.Text = 'Uninstall'
+                    $form.Controls.Add($btnUninstall)
+
+                    $btnInstall.Add_Click({
+                        Set-Content -Path '%s' -Value 'install'
+                        $form.Close()
+                    })
+                    $btnUninstall.Add_Click({
+                        Set-Content -Path '%s' -Value 'uninstall'
+                        $form.Close()
+                    })
+
+                    $form.Add_FormClosed({
+                        if (-not (Test-Path '%s') -or (Get-Content '%s') -eq '') {
+                            Set-Content -Path '%s' -Value 'CANCELLED'
+                        }
+                    })
+
+                    [void]$form.ShowDialog()
+                    """.formatted(resultPath, resultPath, resultPath, resultPath, resultPath);
+
+            Path scriptFile = Files.createTempFile("parsebot-launcher-", ".ps1");
+            Files.writeString(scriptFile, ps);
+            scriptFile.toFile().deleteOnExit();
+
+            Process proc = new ProcessBuilder(
+                    "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptFile.toString())
+                    .inheritIO()
+                    .start();
+            proc.waitFor();
+
+            List<String> lines = Files.readAllLines(resultFile);
+            if (lines.isEmpty() || "CANCELLED".equals(lines.getFirst())) {
+                return null;
+            }
+            return lines.getFirst().trim();
+
+        } catch (IOException | InterruptedException e) {
+            System.err.println("Failed to launch dialog: " + e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -248,7 +346,14 @@ public class Main {
                 return Path.of(args[i + 1]).toAbsolutePath();
             }
         }
-        return Path.of("").toAbsolutePath().resolve("service").resolve(SERVICE_EXE);
+        // Default: service.exe sits next to the installer in the same directory
+        Path installerDir = Path.of(ProcessHandle.current().info().command().orElse(""))
+                .toAbsolutePath().getParent();
+        if (installerDir != null && Files.isRegularFile(installerDir.resolve(SERVICE_EXE))) {
+            return installerDir.resolve(SERVICE_EXE);
+        }
+        // Fallback: look in current working directory
+        return Path.of("").toAbsolutePath().resolve(SERVICE_EXE);
     }
 
     private static int sc(String... args) {
