@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 
 /**
@@ -58,14 +59,18 @@ public class CustomOverrideResolver {
 			return readFile(exact);
 		}
 
-		// Try domain wildcard
+		// Try domain wildcard (not supported on Windows — '*' is an invalid filename char there)
 		int atIndex = senderEmail.indexOf('@');
 		if (atIndex > 0) {
 			String domain = senderEmail.substring(atIndex + 1);
-			Path wildcard = dir.resolve("*@" + domain);
-			if (Files.isRegularFile(wildcard)) {
-				log.info("Using custom {} for sender '{}' (wildcard match): {}", label, senderEmail, wildcard);
-				return readFile(wildcard);
+			try {
+				Path wildcard = dir.resolve("*@" + domain);
+				if (Files.isRegularFile(wildcard)) {
+					log.info("Using custom {} for sender '{}' (wildcard match): {}", label, senderEmail, wildcard);
+					return readFile(wildcard);
+				}
+			} catch (InvalidPathException e) {
+				// filesystem rejects '*' in filenames (e.g. Windows) — no wildcard match possible
 			}
 		}
 

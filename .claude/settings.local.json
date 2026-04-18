@@ -8,7 +8,9 @@
       "Bash(./gradlew :service:dependencies --configuration runtimeClasspath)",
       "Bash(xargs ls:*)",
       "Bash(./gradlew :installer:build:*)",
-      "Bash(xargs -I {} sh -c 'echo \"FILE: {}\"; head -5 \"{}\"')"
+      "Bash(xargs -I {} sh -c 'echo \"FILE: {}\"; head -5 \"{}\"')",
+      "Bash(./gradlew :service:test :check-events:test --console=plain)",
+      "Bash(./gradlew :service:test :check-events:test --console=plain --rerun-tasks)"
     ]
   }
 }
