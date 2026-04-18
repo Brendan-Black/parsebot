@@ -6,6 +6,8 @@ import java.nio.file.Path;
 import java.util.List;
 
 import black.parsebot.event.Event;
+import black.parsebot.storage.Slf4jStorage;
+import black.parsebot.storage.Storage;
 
 public class Main {
 
@@ -18,9 +20,11 @@ public class Main {
             System.exit(1);
         }
 
+        Storage<Event> storage = new Slf4jStorage<>(Event.class, "EVENT: ", logDir, "parsebot*.log");
+
         List<Event> events;
         try {
-            events = EventLogParser.parseEventsFromLogs(logDir);
+            events = storage.readAll();
         } catch (IOException e) {
             System.err.println("Failed to read log files: " + e.getMessage());
             System.exit(1);

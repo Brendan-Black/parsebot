@@ -10,7 +10,8 @@
       "Bash(./gradlew :installer:build:*)",
       "Bash(xargs -I {} sh -c 'echo \"FILE: {}\"; head -5 \"{}\"')",
       "Bash(./gradlew :service:test :check-events:test --console=plain)",
-      "Bash(./gradlew :service:test :check-events:test --console=plain --rerun-tasks)"
+      "Bash(./gradlew :service:test :check-events:test --console=plain --rerun-tasks)",
+      "Bash(xargs grep *)"
     ]
   }
 }

@@ -2,6 +2,7 @@ package black.parsebot.event;
 
 import black.parsebot.notify.NotificationChannel;
 import black.parsebot.notify.NotificationDispatcher;
+import black.parsebot.storage.Storage;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -13,33 +14,42 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class EventBusTest {
 
+	private static class CapturingStorage implements Storage<Event> {
+		final List<Event> appended = new ArrayList<>();
+		@Override public void append(Event item) { appended.add(item); }
+		@Override public List<Event> readAll() { return appended; }
+	}
+
 	@Test
-	void publishForwardsToDispatcher() {
+	void publishAppendsToStorageAndForwardsToDispatcher() {
+		CapturingStorage storage = new CapturingStorage();
 		List<Event> received = new ArrayList<>();
 		NotificationChannel ch = received::add;
 		NotificationDispatcher dispatcher = new NotificationDispatcher(List.of(ch), List.of());
-		EventBus bus = new EventBus(dispatcher);
+		EventBus bus = new EventBus(storage, dispatcher);
 
 		Event e = Event.create(EventType.CONSECUTIVE_FAILURES, EventSeverity.CRITICAL, "m", Map.of());
 		bus.publish(e);
 
+		assertEquals(1, storage.appended.size());
+		assertEquals(e.id(), storage.appended.get(0).id());
 		assertEquals(1, received.size());
 		assertEquals(e.id(), received.get(0).id());
 	}
 
 	@Test
 	void publishSwallowsDispatcherExceptions() {
-		// Build a dispatcher whose channel always throws — wrap in a subclass
-		// of NotificationDispatcher that re-throws from dispatch() itself.
+		CapturingStorage storage = new CapturingStorage();
 		NotificationDispatcher throwing = new NotificationDispatcher(List.of(), List.of()) {
 			@Override
 			public void dispatch(Event event) {
 				throw new RuntimeException("boom");
 			}
 		};
-		EventBus bus = new EventBus(throwing);
+		EventBus bus = new EventBus(storage, throwing);
 
 		Event e = Event.create(EventType.REPORT_CARD, EventSeverity.INFO, "m", Map.of());
 		assertDoesNotThrow(() -> bus.publish(e));
+		assertEquals(1, storage.appended.size());
 	}
 }

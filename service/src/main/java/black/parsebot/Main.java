@@ -1,6 +1,7 @@
 package black.parsebot;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import black.parsebot.config.AppConfig;
 import black.parsebot.config.EventsConfig;
 import black.parsebot.config.NotifyConfig;
+import black.parsebot.event.Event;
 import black.parsebot.event.EventBus;
 import black.parsebot.event.ReportCardScheduler;
 import black.parsebot.notify.NotificationChannel;
@@ -20,6 +22,8 @@ import black.parsebot.notify.NotificationDispatcher;
 import black.parsebot.notify.SmtpChannel;
 import black.parsebot.notify.TeamsWebhookChannel;
 import black.parsebot.service.ParseBotService;
+import black.parsebot.storage.Slf4jStorage;
+import black.parsebot.storage.Storage;
 
 public class Main {
 
@@ -56,7 +60,8 @@ public class Main {
         }
 
         NotificationDispatcher dispatcher = new NotificationDispatcher(criticalChannels, infoChannels);
-        EventBus eventBus = new EventBus(dispatcher);
+        Storage<Event> eventStorage = new Slf4jStorage<>(Event.class, "EVENT: ", Path.of("logs"), "parsebot*.log");
+        EventBus eventBus = new EventBus(eventStorage, dispatcher);
 
         ParseBotService service;
         try {

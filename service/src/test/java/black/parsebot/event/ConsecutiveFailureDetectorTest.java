@@ -1,6 +1,7 @@
 package black.parsebot.event;
 
 import black.parsebot.notify.NotificationDispatcher;
+import black.parsebot.storage.Storage;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -11,9 +12,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ConsecutiveFailureDetectorTest {
 
+	private static class NoopStorage implements Storage<Event> {
+		@Override public void append(Event item) {}
+		@Override public List<Event> readAll() { return List.of(); }
+	}
+
 	private static class CapturingBus extends EventBus {
 		final List<Event> captured = new ArrayList<>();
-		CapturingBus() { super(new NotificationDispatcher(List.of(), List.of())); }
+		CapturingBus() { super(new NoopStorage(), new NotificationDispatcher(List.of(), List.of())); }
 		@Override public void publish(Event event) { captured.add(event); }
 	}
 
