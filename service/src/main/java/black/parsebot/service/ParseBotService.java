@@ -40,8 +40,7 @@ public class ParseBotService {
 		this.claudeClient = new ClaudeClient(config.getClaudeApiKey());
 		this.customerCsvPath = Path.of(config.getCustomerCsvPath());
 		this.productCsvPath = Path.of(config.getProductCsvPath());
-		this.overrideResolver = new CustomOverrideResolver(
-				config.getCustomRulesDir(), config.getCustomProductListsDir());
+		this.overrideResolver = new CustomOverrideResolver(config.getCustomRulesDir(), config.getCustomProductListsDir());
 
 		this.sftpWriter = new SftpWriter(config.getSftpConfig());
 	}

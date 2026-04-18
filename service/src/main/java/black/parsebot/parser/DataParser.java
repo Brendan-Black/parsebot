@@ -65,8 +65,7 @@ public class DataParser {
 			byte[] pdfBytes = pdf.getValue();
 
 			log.info("Sending PDF attachment '{}' to Claude", pdfName);
-			String responseJson = claudeClient.parsePdf(pdfName, pdfBytes, customerCsv, effectiveProductCsv,
-					customRules);
+			String responseJson = claudeClient.parsePdf(pdfName, pdfBytes, customerCsv, effectiveProductCsv,customRules);
 
 			String outputFilename = sanitizeFilename(pdfName) + ".json";
 			results.add(new TransformedData(outputFilename, responseJson.getBytes(StandardCharsets.UTF_8)));
