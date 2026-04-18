@@ -1,5 +1,10 @@
 package black.parsebot.installer;
 
+import static black.parsebot.installer.InstallerConfig.DESCRIPTION;
+import static black.parsebot.installer.InstallerConfig.DISPLAY_NAME;
+import static black.parsebot.installer.InstallerConfig.SERVICE_EXE;
+import static black.parsebot.installer.InstallerConfig.SERVICE_NAME;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -10,8 +15,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static black.parsebot.installer.InstallerConfig.*;
 
 final class ServiceController {
 

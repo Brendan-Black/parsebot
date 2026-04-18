@@ -1,5 +1,13 @@
 package black.parsebot.installer;
 
+import static black.parsebot.installer.InstallerConfig.BOOLEAN_FIELDS;
+import static black.parsebot.installer.InstallerConfig.FILE_FIELDS;
+import static black.parsebot.installer.InstallerConfig.FOLDER_FIELDS;
+import static black.parsebot.installer.InstallerConfig.MULTILINE_FIELDS;
+import static black.parsebot.installer.InstallerConfig.SECTIONS;
+import static black.parsebot.installer.InstallerConfig.SMS_CARRIERS;
+import static black.parsebot.installer.InstallerConfig.TIME_FIELDS;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -8,10 +16,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import black.parsebot.installer.InstallerConfig.Field;
+import black.parsebot.installer.InstallerConfig.Section;
 import black.parsebot.ps.PowerShellRunner;
 import black.parsebot.ps.WinFormsScript;
-
-import static black.parsebot.installer.InstallerConfig.*;
 
 final class PowerShellInstallerUi implements InstallerUi {
 

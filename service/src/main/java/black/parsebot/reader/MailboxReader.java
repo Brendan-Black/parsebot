@@ -1,20 +1,26 @@
 package black.parsebot.reader;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import black.parsebot.config.MailConfig;
 import black.parsebot.event.Event;
 import black.parsebot.event.EventBus;
 import black.parsebot.event.EventSeverity;
 import black.parsebot.event.EventType;
 import black.parsebot.model.raw.RawMailboxData;
-import jakarta.mail.*;
+import jakarta.mail.BodyPart;
+import jakarta.mail.Folder;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Session;
+import jakarta.mail.Store;
 import jakarta.mail.internet.MimeMultipart;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 
 public class MailboxReader {
 
