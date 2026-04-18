@@ -1,5 +1,7 @@
 package black.parsebot.event;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +27,16 @@ public class EventBus {
 			dispatcher.dispatch(event);
 		} catch (Exception e) {
 			log.error("Failed to dispatch notification for event {}", event.id(), e);
+			// Persist directly — re-publishing through the bus would re-enter dispatch()
+			storage.append(Event.create(
+					EventType.NOTIFICATION_FAILED,
+					EventSeverity.AUDIT,
+					"Dispatcher failed for event " + event.id(),
+					Map.of(
+							"originalEventId", event.id(),
+							"originalEventType", String.valueOf(event.type()),
+							"error", String.valueOf(e.getMessage())
+					)));
 		}
 	}
 }

@@ -59,8 +59,8 @@ public class Main {
             log.info("Teams webhook notification channel enabled");
         }
 
-        NotificationDispatcher dispatcher = new NotificationDispatcher(criticalChannels, infoChannels);
         Storage<Event> eventStorage = new Slf4jStorage<>(Event.class, "EVENT: ", Path.of("logs"), "parsebot*.log");
+        NotificationDispatcher dispatcher = new NotificationDispatcher(criticalChannels, infoChannels, eventStorage);
         EventBus eventBus = new EventBus(eventStorage, dispatcher);
 
         ParseBotService service;

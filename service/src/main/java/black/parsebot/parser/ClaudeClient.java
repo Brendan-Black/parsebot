@@ -9,6 +9,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Base64;
+import java.util.Map;
+
+import black.parsebot.event.Event;
+import black.parsebot.event.EventBus;
+import black.parsebot.event.EventSeverity;
+import black.parsebot.event.EventType;
 
 public class ClaudeClient {
 
@@ -104,10 +110,12 @@ public class ClaudeClient {
 
 	private final String apiKey;
 	private final HttpClient httpClient;
+	private final EventBus eventBus;
 
-	public ClaudeClient(String apiKey) {
+	public ClaudeClient(String apiKey, EventBus eventBus) {
 		this.apiKey = apiKey;
 		this.httpClient = HttpClient.newHttpClient();
+		this.eventBus = eventBus;
 	}
 
 	/**
@@ -156,6 +164,15 @@ public class ClaudeClient {
 
 		if (response.statusCode() != 200) {
 			log.error("Claude API returned status {}: {}", response.statusCode(), response.body());
+			eventBus.publish(Event.create(
+					EventType.CLAUDE_API_FAILED,
+					EventSeverity.AUDIT,
+					"Claude API returned status " + response.statusCode(),
+					Map.of(
+							"filename", filename,
+							"statusCode", String.valueOf(response.statusCode()),
+							"body", response.body()
+					)));
 			throw new IOException("Claude API error (HTTP " + response.statusCode() + "): " + response.body());
 		}
 

@@ -1,6 +1,10 @@
 package black.parsebot.reader;
 
 import black.parsebot.config.MailConfig;
+import black.parsebot.event.Event;
+import black.parsebot.event.EventBus;
+import black.parsebot.event.EventSeverity;
+import black.parsebot.event.EventType;
 import black.parsebot.model.raw.RawMailboxData;
 import jakarta.mail.*;
 import jakarta.mail.internet.MimeMultipart;
@@ -9,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 public class MailboxReader {
@@ -16,11 +21,13 @@ public class MailboxReader {
     private static final Logger log = LoggerFactory.getLogger(MailboxReader.class);
 
     private final MailConfig config;
+    private final EventBus eventBus;
     private Store store;
     private Folder sourceFolder;
 
-    public MailboxReader(MailConfig config) {
+    public MailboxReader(MailConfig config, EventBus eventBus) {
         this.config = config;
+        this.eventBus = eventBus;
     }
 
     public void ensureConnected() throws MessagingException {
@@ -68,6 +75,15 @@ public class MailboxReader {
             }
         } catch (Exception e) {
             log.error("Error reading mailbox", e);
+            eventBus.publish(Event.create(
+                    EventType.MAILBOX_READ_FAILED,
+                    EventSeverity.AUDIT,
+                    "Failed to read mailbox: " + e.getMessage(),
+                    Map.of(
+                            "host", config.getHost(),
+                            "folder", config.getFolder(),
+                            "error", String.valueOf(e.getMessage())
+                    )));
         }
 
         return results;

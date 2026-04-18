@@ -107,6 +107,42 @@ class Slf4jStorageTest {
 	}
 
 	@Test
+	void readLastReturnsTailDescending(@TempDir Path tmp) throws IOException {
+		Files.writeString(tmp.resolve("parsebot.log"), EVT1 + "\n" + EVT2 + "\n");
+
+		List<Event> last1 = storage(tmp).readLast(1);
+		assertEquals(1, last1.size());
+		assertEquals("id-2", last1.get(0).id());
+
+		List<Event> last2 = storage(tmp).readLast(2);
+		assertEquals(2, last2.size());
+		assertEquals("id-2", last2.get(0).id());
+		assertEquals("id-1", last2.get(1).id());
+	}
+
+	@Test
+	void readLastClampsToAvailable(@TempDir Path tmp) throws IOException {
+		Files.writeString(tmp.resolve("parsebot.log"), EVT1 + "\n");
+
+		List<Event> last5 = storage(tmp).readLast(5);
+		assertEquals(1, last5.size());
+		assertEquals("id-1", last5.get(0).id());
+	}
+
+	@Test
+	void readLastZeroReturnsEmpty(@TempDir Path tmp) throws IOException {
+		Files.writeString(tmp.resolve("parsebot.log"), EVT1 + "\n" + EVT2 + "\n");
+
+		assertTrue(storage(tmp).readLast(0).isEmpty());
+	}
+
+	@Test
+	void readLastNegativeThrows(@TempDir Path tmp) {
+		org.junit.jupiter.api.Assertions.assertThrows(
+				IllegalArgumentException.class, () -> storage(tmp).readLast(-1));
+	}
+
+	@Test
 	void appendThenReadAllRoundTrips(@TempDir Path tmp) throws IOException {
 		// Write directly to a file using the same marker format the SLF4J appender would produce.
 		Event e = Event.create(EventType.REPORT_CARD, EventSeverity.INFO, "hello", Map.of("k", "v"));

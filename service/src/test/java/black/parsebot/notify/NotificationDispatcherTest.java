@@ -3,6 +3,7 @@ package black.parsebot.notify;
 import black.parsebot.event.Event;
 import black.parsebot.event.EventSeverity;
 import black.parsebot.event.EventType;
+import black.parsebot.storage.Storage;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -25,6 +26,13 @@ class NotificationDispatcherTest {
 		@Override public void send(Event event) { calls++; throw new RuntimeException("nope"); }
 	}
 
+	private static class CapturingStorage implements Storage<Event> {
+		final List<Event> appended = new ArrayList<>();
+		@Override public void append(Event item) { appended.add(item); }
+		@Override public List<Event> readAll() { return appended; }
+		@Override public List<Event> readLast(int n) { return List.of(); }
+	}
+
 	private static Event critical() {
 		return Event.create(EventType.CONSECUTIVE_FAILURES, EventSeverity.CRITICAL, "m", Map.of());
 	}
@@ -33,11 +41,15 @@ class NotificationDispatcherTest {
 		return Event.create(EventType.REPORT_CARD, EventSeverity.INFO, "m", Map.of());
 	}
 
+	private static Event audit() {
+		return Event.create(EventType.PIPELINE_RUN_FAILED, EventSeverity.AUDIT, "m", Map.of());
+	}
+
 	@Test
 	void criticalRoutesToCriticalChannelsOnly() {
 		RecordingChannel crit = new RecordingChannel();
 		RecordingChannel inf = new RecordingChannel();
-		NotificationDispatcher d = new NotificationDispatcher(List.of(crit), List.of(inf));
+		NotificationDispatcher d = new NotificationDispatcher(List.of(crit), List.of(inf), new CapturingStorage());
 
 		d.dispatch(critical());
 
@@ -49,7 +61,7 @@ class NotificationDispatcherTest {
 	void infoRoutesToInfoChannelsOnly() {
 		RecordingChannel crit = new RecordingChannel();
 		RecordingChannel inf = new RecordingChannel();
-		NotificationDispatcher d = new NotificationDispatcher(List.of(crit), List.of(inf));
+		NotificationDispatcher d = new NotificationDispatcher(List.of(crit), List.of(inf), new CapturingStorage());
 
 		d.dispatch(info());
 
@@ -58,10 +70,22 @@ class NotificationDispatcherTest {
 	}
 
 	@Test
+	void auditRoutesToNoChannels() {
+		RecordingChannel crit = new RecordingChannel();
+		RecordingChannel inf = new RecordingChannel();
+		NotificationDispatcher d = new NotificationDispatcher(List.of(crit), List.of(inf), new CapturingStorage());
+
+		d.dispatch(audit());
+
+		assertTrue(crit.received.isEmpty());
+		assertTrue(inf.received.isEmpty());
+	}
+
+	@Test
 	void allChannelsInTargetListAreInvoked() {
 		RecordingChannel a = new RecordingChannel();
 		RecordingChannel b = new RecordingChannel();
-		NotificationDispatcher d = new NotificationDispatcher(List.of(a, b), List.of());
+		NotificationDispatcher d = new NotificationDispatcher(List.of(a, b), List.of(), new CapturingStorage());
 
 		d.dispatch(critical());
 
@@ -73,7 +97,8 @@ class NotificationDispatcherTest {
 	void oneChannelFailureDoesNotStopOthers() {
 		ThrowingChannel bad = new ThrowingChannel();
 		RecordingChannel good = new RecordingChannel();
-		NotificationDispatcher d = new NotificationDispatcher(List.of(bad, good), List.of());
+		CapturingStorage storage = new CapturingStorage();
+		NotificationDispatcher d = new NotificationDispatcher(List.of(bad, good), List.of(), storage);
 
 		assertDoesNotThrow(() -> d.dispatch(critical()));
 
@@ -82,8 +107,25 @@ class NotificationDispatcherTest {
 	}
 
 	@Test
+	void channelFailurePersistsNotificationFailedEvent() {
+		ThrowingChannel bad = new ThrowingChannel();
+		CapturingStorage storage = new CapturingStorage();
+		NotificationDispatcher d = new NotificationDispatcher(List.of(bad), List.of(), storage);
+
+		Event original = critical();
+		d.dispatch(original);
+
+		assertEquals(1, storage.appended.size());
+		Event failed = storage.appended.get(0);
+		assertEquals(EventType.NOTIFICATION_FAILED, failed.type());
+		assertEquals(EventSeverity.AUDIT, failed.severity());
+		assertEquals(original.id(), failed.details().get("originalEventId"));
+		assertEquals("ThrowingChannel", failed.details().get("channel"));
+	}
+
+	@Test
 	void emptyChannelListIsNoOp() {
-		NotificationDispatcher d = new NotificationDispatcher(List.of(), List.of());
+		NotificationDispatcher d = new NotificationDispatcher(List.of(), List.of(), new CapturingStorage());
 		assertDoesNotThrow(() -> d.dispatch(critical()));
 		assertDoesNotThrow(() -> d.dispatch(info()));
 	}

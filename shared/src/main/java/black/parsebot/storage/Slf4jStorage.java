@@ -47,6 +47,16 @@ public final class Slf4jStorage<T> implements Storage<T> {
 	}
 
 	@Override
+	public List<T> readLast(int n) throws IOException {
+		if (n < 0) throw new IllegalArgumentException("n must be non-negative");
+		List<T> all = readAll();
+		int from = Math.max(0, all.size() - n);
+		List<T> tail = new ArrayList<>(all.subList(from, all.size()));
+		java.util.Collections.reverse(tail);
+		return tail;
+	}
+
+	@Override
 	public List<T> readAll() throws IOException {
 		List<Path> files = new ArrayList<>();
 		try (DirectoryStream<Path> stream = Files.newDirectoryStream(logDir, logGlob)) {

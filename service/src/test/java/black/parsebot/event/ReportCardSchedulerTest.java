@@ -18,11 +18,12 @@ class ReportCardSchedulerTest {
 	private static class NoopStorage implements Storage<Event> {
 		@Override public void append(Event item) {}
 		@Override public List<Event> readAll() { return List.of(); }
+		@Override public List<Event> readLast(int n) { return List.of(); }
 	}
 
 	private static class CapturingBus extends EventBus {
 		final List<Event> captured = new ArrayList<>();
-		CapturingBus() { super(new NoopStorage(), new NotificationDispatcher(List.of(), List.of())); }
+		CapturingBus() { super(new NoopStorage(), new NotificationDispatcher(List.of(), List.of(), new NoopStorage())); }
 		@Override public void publish(Event event) { captured.add(event); }
 	}
 

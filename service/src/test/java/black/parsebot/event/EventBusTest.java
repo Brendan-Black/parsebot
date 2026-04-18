@@ -18,6 +18,7 @@ class EventBusTest {
 		final List<Event> appended = new ArrayList<>();
 		@Override public void append(Event item) { appended.add(item); }
 		@Override public List<Event> readAll() { return appended; }
+		@Override public List<Event> readLast(int n) { return List.of(); }
 	}
 
 	@Test
@@ -25,7 +26,7 @@ class EventBusTest {
 		CapturingStorage storage = new CapturingStorage();
 		List<Event> received = new ArrayList<>();
 		NotificationChannel ch = received::add;
-		NotificationDispatcher dispatcher = new NotificationDispatcher(List.of(ch), List.of());
+		NotificationDispatcher dispatcher = new NotificationDispatcher(List.of(ch), List.of(), storage);
 		EventBus bus = new EventBus(storage, dispatcher);
 
 		Event e = Event.create(EventType.CONSECUTIVE_FAILURES, EventSeverity.CRITICAL, "m", Map.of());
@@ -38,9 +39,9 @@ class EventBusTest {
 	}
 
 	@Test
-	void publishSwallowsDispatcherExceptions() {
+	void publishSwallowsDispatcherExceptionsAndPersistsNotificationFailed() {
 		CapturingStorage storage = new CapturingStorage();
-		NotificationDispatcher throwing = new NotificationDispatcher(List.of(), List.of()) {
+		NotificationDispatcher throwing = new NotificationDispatcher(List.of(), List.of(), storage) {
 			@Override
 			public void dispatch(Event event) {
 				throw new RuntimeException("boom");
@@ -50,6 +51,12 @@ class EventBusTest {
 
 		Event e = Event.create(EventType.REPORT_CARD, EventSeverity.INFO, "m", Map.of());
 		assertDoesNotThrow(() -> bus.publish(e));
-		assertEquals(1, storage.appended.size());
+
+		assertEquals(2, storage.appended.size());
+		assertEquals(e.id(), storage.appended.get(0).id());
+		Event failed = storage.appended.get(1);
+		assertEquals(EventType.NOTIFICATION_FAILED, failed.type());
+		assertEquals(EventSeverity.AUDIT, failed.severity());
+		assertEquals(e.id(), failed.details().get("originalEventId"));
 	}
 }

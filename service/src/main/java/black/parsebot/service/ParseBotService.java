@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -15,7 +16,10 @@ import black.parsebot.config.CustomOverrideResolver;
 import black.parsebot.config.MailConfig;
 import black.parsebot.config.ReferenceDataConfig;
 import black.parsebot.event.ConsecutiveFailureDetector;
+import black.parsebot.event.Event;
 import black.parsebot.event.EventBus;
+import black.parsebot.event.EventSeverity;
+import black.parsebot.event.EventType;
 import black.parsebot.model.TransformedData;
 import black.parsebot.model.raw.RawMailboxData;
 import black.parsebot.parser.ClaudeClient;
@@ -39,6 +43,7 @@ public class ParseBotService {
 	private final CustomOverrideResolver overrideResolver;
 	private final AppConfig config;
 	private final ConsecutiveFailureDetector failureDetector;
+	private final EventBus eventBus;
 
 	// Cumulative counters for report card — reset by ReportCardScheduler
 	private final AtomicInteger totalSuccessCount = new AtomicInteger();
@@ -46,17 +51,18 @@ public class ParseBotService {
 
 	public ParseBotService(AppConfig config, EventBus eventBus) throws IOException {
 		this.config = config;
+		this.eventBus = eventBus;
 		this.mailConfig = config.getMailConfig();
-		this.mailReader = new MailboxReader(config.getMailConfig());
-		this.mailWriter = new MailboxWriter(mailReader);
+		this.mailReader = new MailboxReader(config.getMailConfig(), eventBus);
+		this.mailWriter = new MailboxWriter(mailReader, eventBus);
 
-		this.claudeClient = new ClaudeClient(config.getClaudeConfig().getApiKey());
+		this.claudeClient = new ClaudeClient(config.getClaudeConfig().getApiKey(), eventBus);
 		ReferenceDataConfig refData = config.getReferenceDataConfig();
 		this.customerCsvPath = Path.of(refData.getCustomerCsvPath());
 		this.productCsvPath = Path.of(refData.getProductCsvPath());
 		this.overrideResolver = new CustomOverrideResolver(refData.getCustomRulesDir(), refData.getCustomProductListsDir());
 
-		this.sftpWriter = new SftpWriter(config.getSftpConfig());
+		this.sftpWriter = new SftpWriter(config.getSftpConfig(), eventBus);
 		this.failureDetector = new ConsecutiveFailureDetector(config.getEventsConfig().getConsecutiveFailureThreshold(), eventBus);
 	}
 
@@ -121,6 +127,15 @@ public class ParseBotService {
 					failureDetector.recordSuccess();
 				} catch (Exception e) {
 					log.error("Failed to process: {}", email.getName(), e);
+					eventBus.publish(Event.create(
+							EventType.MESSAGE_PROCESSING_FAILED,
+							EventSeverity.AUDIT,
+							"Failed to process message: " + email.getName(),
+							Map.of(
+									"messageName", email.getName() != null ? email.getName() : "<unknown>",
+									"sender", email.getSenderEmail() != null ? email.getSenderEmail() : "<unknown>",
+									"error", String.valueOf(e.getMessage())
+							)));
 					onFailure(email, mailWriter);
 					failCount++;
 					totalFailCount.incrementAndGet();
@@ -131,6 +146,11 @@ public class ParseBotService {
 			log.info("Pipeline run complete: {} succeeded, {} failed", successCount, failCount);
 		} catch (Exception e) {
 			log.error("Pipeline run failed", e);
+			eventBus.publish(Event.create(
+					EventType.PIPELINE_RUN_FAILED,
+					EventSeverity.AUDIT,
+					"Pipeline run failed: " + e.getMessage(),
+					Map.of("error", String.valueOf(e.getMessage()))));
 		}
 	}
 
