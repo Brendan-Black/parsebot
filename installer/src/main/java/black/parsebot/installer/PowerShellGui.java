@@ -8,6 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import black.parsebot.ps.PowerShellRunner;
+
 import static black.parsebot.installer.InstallerConfig.*;
 
 final class PowerShellGui {
@@ -18,10 +20,7 @@ final class PowerShellGui {
             resultFile.toFile().deleteOnExit();
             String resultPath = resultFile.toString().replace("\\", "\\\\");
 
-            String ps = """
-                    Add-Type -AssemblyName System.Windows.Forms
-                    Add-Type -AssemblyName System.Drawing
-                    [System.Windows.Forms.Application]::EnableVisualStyles()
+            String ps = PowerShellRunner.WINFORMS_PREAMBLE + """
 
                     $form = New-Object System.Windows.Forms.Form
                     $form.Text = 'ParseBot Installer'
@@ -67,15 +66,7 @@ final class PowerShellGui {
                     [void]$form.ShowDialog()
                     """.formatted(resultPath, resultPath, resultPath, resultPath, resultPath);
 
-            Path scriptFile = Files.createTempFile("parsebot-launcher-", ".ps1");
-            Files.writeString(scriptFile, ps);
-            scriptFile.toFile().deleteOnExit();
-
-            Process proc = new ProcessBuilder(
-                    "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptFile.toString())
-                    .inheritIO()
-                    .start();
-            proc.waitFor();
+            PowerShellRunner.run(ps, "parsebot-launcher-");
 
             List<String> lines = Files.readAllLines(resultFile);
             if (lines.isEmpty() || "CANCELLED".equals(lines.getFirst())) {
@@ -91,9 +82,7 @@ final class PowerShellGui {
 
     static Map<String, String> showConfigDialog(Map<String, String> existing) {
         StringBuilder ps = new StringBuilder();
-        ps.append("Add-Type -AssemblyName System.Windows.Forms\n");
-        ps.append("Add-Type -AssemblyName System.Drawing\n");
-        ps.append("[System.Windows.Forms.Application]::EnableVisualStyles()\n\n");
+        ps.append(PowerShellRunner.WINFORMS_PREAMBLE).append('\n');
 
         appendFormSetup(ps);
 
@@ -126,14 +115,14 @@ final class PowerShellGui {
                 if (isBoolean) {
                     appendBooleanRadios(ps, fieldIndex, s, y, defaultVal);
                 } else if (isTime) {
-                    defaultVal = escapeForSingleQuote(defaultVal);
+                    defaultVal = PowerShellRunner.escapeSingleQuote(defaultVal);
                     appendTimePicker(ps, fieldIndex, s, y, defaultVal);
                 } else if (MULTILINE_FIELDS.contains(key)) {
                     defaultVal = escapeForMultiline(defaultVal);
                     appendMultilineTextBox(ps, fieldIndex, s, y, defaultVal);
                     y += 40;
                 } else {
-                    defaultVal = escapeForSingleQuote(defaultVal);
+                    defaultVal = PowerShellRunner.escapeSingleQuote(defaultVal);
                     boolean hasBrowse = FOLDER_FIELDS.contains(key) || FILE_FIELDS.contains(key);
                     boolean isPassword = key.contains("password") || key.contains("api.key");
                     appendTextBox(ps, fieldIndex, s, y, defaultVal, hasBrowse, isPassword);
@@ -156,7 +145,7 @@ final class PowerShellGui {
 
             appendResultCollection(ps, resultPath, keys, isBooleanField, isTimeField);
 
-            String raw = runPowerShellScriptRaw(ps.toString(), resultFile);
+            String raw = PowerShellRunner.runWithResult(ps.toString(), "parsebot-installer-", resultFile);
             if (raw == null) return null;
 
             Map<String, String> values = new LinkedHashMap<>();
@@ -426,39 +415,15 @@ final class PowerShellGui {
 
     // --- Value escaping ---
 
-    private static String escapeForSingleQuote(String value) {
-        return value.replace("'", "''");
-    }
-
     private static String escapeForMultiline(String value) {
         if (value.contains(",")) {
             value = value.replace(",", "`r`n");
             value = value.replace("$", "`$");
             value = value.replace("\"", "`\"");
         } else {
-            value = escapeForSingleQuote(value);
+            value = PowerShellRunner.escapeSingleQuote(value);
         }
         return value;
-    }
-
-    // --- Script execution ---
-
-    private static String runPowerShellScriptRaw(String script, Path resultFile) throws IOException, InterruptedException {
-        Path scriptFile = Files.createTempFile("parsebot-installer-", ".ps1");
-        Files.writeString(scriptFile, script);
-        scriptFile.toFile().deleteOnExit();
-
-        Process proc = new ProcessBuilder(
-                "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptFile.toString())
-                .inheritIO()
-                .start();
-        int rc = proc.waitFor();
-
-        List<String> lines = Files.readAllLines(resultFile);
-        if (rc != 0 || lines.isEmpty() || "CANCELLED".equals(lines.getFirst())) {
-            return null;
-        }
-        return String.join("\n", lines);
     }
 
     private PowerShellGui() {}

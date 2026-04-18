@@ -13,6 +13,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
 
+import black.parsebot.event.Event;
+
 final class EventLogParser {
 
     private static final String EVENT_MARKER = "EVENT: ";

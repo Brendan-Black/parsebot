@@ -1,12 +1,15 @@
 package black.parsebot.checkevents;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+
+import black.parsebot.event.Event;
+import black.parsebot.event.EventSeverity;
+import black.parsebot.ps.PowerShellRunner;
 
 final class EventsGui {
 
@@ -16,10 +19,7 @@ final class EventsGui {
     private EventsGui() {}
 
     static void showEmpty(Path logDir) {
-        String ps = """
-                Add-Type -AssemblyName System.Windows.Forms
-                Add-Type -AssemblyName System.Drawing
-                [System.Windows.Forms.Application]::EnableVisualStyles()
+        String ps = PowerShellRunner.WINFORMS_PREAMBLE + """
 
                 $form = New-Object System.Windows.Forms.Form
                 $form.Text = 'ParseBot Events'
@@ -51,9 +51,7 @@ final class EventsGui {
 
     static void showEvents(List<Event> events, Path logDir) {
         StringBuilder ps = new StringBuilder();
-        ps.append("Add-Type -AssemblyName System.Windows.Forms\n");
-        ps.append("Add-Type -AssemblyName System.Drawing\n");
-        ps.append("[System.Windows.Forms.Application]::EnableVisualStyles()\n\n");
+        ps.append(PowerShellRunner.WINFORMS_PREAMBLE).append('\n');
 
         ps.append("$form = New-Object System.Windows.Forms.Form\n");
         ps.append("$form.Text = 'ParseBot Events (" + events.size() + " entries)'\n");
@@ -92,8 +90,8 @@ final class EventsGui {
         for (int i = events.size() - 1; i >= 0; i--) {
             Event event = events.get(i);
             String timestamp = event.timestamp() != null ? DISPLAY_FORMAT.format(event.timestamp()) : "N/A";
-            String type = event.type() != null ? event.type() : "N/A";
-            String severity = event.severity() != null ? event.severity() : "N/A";
+            String type = event.type() != null ? event.type().name() : "N/A";
+            String severity = event.severity() != null ? event.severity().name() : "N/A";
             String message = event.message() != null ? event.message() : "";
             String details = formatDetails(event.details());
 
@@ -105,7 +103,7 @@ final class EventsGui {
                     escapePsString(message),
                     escapePsString(details)));
 
-            if ("CRITICAL".equals(severity)) {
+            if (event.severity() == EventSeverity.CRITICAL) {
                 ps.append("$dgv.Rows[$idx].DefaultCellStyle.BackColor = [System.Drawing.Color]::MistyRose\n");
                 ps.append("$dgv.Rows[$idx].DefaultCellStyle.ForeColor = [System.Drawing.Color]::DarkRed\n");
             }
@@ -136,20 +134,12 @@ final class EventsGui {
     }
 
     private static String escapePsString(String input) {
-        return input.replace("'", "''").replace("\n", " ").replace("\r", "");
+        return PowerShellRunner.escapeSingleQuote(input).replace("\n", " ").replace("\r", "");
     }
 
     private static void runPowerShell(String script) {
         try {
-            Path scriptFile = Files.createTempFile("parsebot-events-", ".ps1");
-            Files.writeString(scriptFile, script);
-            scriptFile.toFile().deleteOnExit();
-
-            Process proc = new ProcessBuilder(
-                    "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptFile.toString())
-                    .inheritIO()
-                    .start();
-            proc.waitFor();
+            PowerShellRunner.run(script, "parsebot-events-");
         } catch (IOException | InterruptedException e) {
             System.err.println("Failed to launch events viewer: " + e.getMessage());
         }

@@ -16,5 +16,5 @@ public record Event(
 	public static Event create(EventType type, EventSeverity severity, String message, Map<String, String> details) {
 		return new Event(UUID.randomUUID().toString(), type, severity, Instant.now(), message, details);
 	}
-	
+
 }

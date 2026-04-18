@@ -5,6 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import black.parsebot.event.Event;
+
 public class Main {
 
     public static void main(String[] args) {
