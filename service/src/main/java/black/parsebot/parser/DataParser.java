@@ -55,8 +55,9 @@ public class DataParser {
 			return List.of();
 		}
 
-		String effectiveProductCsv = (customProductCsv != null && !customProductCsv.isBlank())
-				? customProductCsv : productCsv;
+		String effectiveProductCsv = (customProductCsv != null && !customProductCsv.isBlank()) ?
+				customProductCsv 
+				: productCsv;
 
 		List<TransformedData> results = new ArrayList<>();
 
