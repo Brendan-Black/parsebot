@@ -13,57 +13,57 @@ import black.parsebot.config.EventsConfig;
 
 public class ReportCardScheduler implements Runnable {
 
-	private static final Logger log = LoggerFactory.getLogger(ReportCardScheduler.class);
+  private static final Logger log = LoggerFactory.getLogger(ReportCardScheduler.class);
 
-	private final LocalTime reportTime;
-	private final EventBus eventBus;
-	private final AtomicInteger successCount;
-	private final AtomicInteger failCount;
-	private LocalDate lastReportDate;
+  private final LocalTime reportTime;
+  private final EventBus eventBus;
+  private final AtomicInteger successCount;
+  private final AtomicInteger failCount;
+  private LocalDate lastReportDate;
 
-	public ReportCardScheduler(EventsConfig config, EventBus eventBus,  AtomicInteger successCount, AtomicInteger failCount) {
-		this.reportTime = LocalTime.parse(config.getReportTime(), DateTimeFormatter.ofPattern("HH:mm"));
-		this.eventBus = eventBus;
-		this.successCount = successCount;
-		this.failCount = failCount;
-	}
+  public ReportCardScheduler(EventsConfig config, EventBus eventBus,  AtomicInteger successCount, AtomicInteger failCount) {
+    this.reportTime = LocalTime.parse(config.getReportTime(), DateTimeFormatter.ofPattern("HH:mm"));
+    this.eventBus = eventBus;
+    this.successCount = successCount;
+    this.failCount = failCount;
+  }
 
-	@Override
-	public void run() {
-		try {
-			LocalDate today = LocalDate.now();
-			LocalTime now = LocalTime.now();
+  @Override
+  public void run() {
+    try {
+      LocalDate today = LocalDate.now();
+      LocalTime now = LocalTime.now();
 
-			if (today.equals(lastReportDate)) {
-				return;
-			}
+      if (today.equals(lastReportDate)) {
+        return;
+      }
 
-			if (now.isBefore(reportTime)) {
-				return;
-			}
+      if (now.isBefore(reportTime)) {
+        return;
+      }
 
-			int success = successCount.getAndSet(0);
-			int fail = failCount.getAndSet(0);
-			int total = success + fail;
+      int success = successCount.getAndSet(0);
+      int fail = failCount.getAndSet(0);
+      int total = success + fail;
 
-			String message = String.format("Report card: %d processed, %d succeeded, %d failed",
-					total, success, fail);
+      String message = String.format("Report card: %d processed, %d succeeded, %d failed",
+          total, success, fail);
 
-			eventBus.publish(Event.create(
-					EventType.REPORT_CARD,
-					EventSeverity.INFO,
-					message,
-					Map.of(
-							"totalProcessed", String.valueOf(total),
-							"successCount", String.valueOf(success),
-							"failCount", String.valueOf(fail)
-					)
-			));
+      eventBus.publish(Event.create(
+          EventType.REPORT_CARD,
+          EventSeverity.INFO,
+          message,
+          Map.of(
+              "totalProcessed", String.valueOf(total),
+              "successCount", String.valueOf(success),
+              "failCount", String.valueOf(fail)
+          )
+      ));
 
-			lastReportDate = today;
-			log.info("Report card generated for {}", today);
-		} catch (Exception e) {
-			log.error("Failed to generate report card", e);
-		}
-	}
+      lastReportDate = today;
+      log.info("Report card generated for {}", today);
+    } catch (Exception e) {
+      log.error("Failed to generate report card", e);
+    }
+  }
 }

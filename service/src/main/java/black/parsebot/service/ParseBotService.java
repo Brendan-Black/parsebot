@@ -31,138 +31,138 @@ import black.parsebot.writer.SftpWriter;
 
 public class ParseBotService {
 
-	private static final Logger log = LoggerFactory.getLogger(ParseBotService.class);
+  private static final Logger log = LoggerFactory.getLogger(ParseBotService.class);
 
-	private final MailboxReader mailReader;
-	private final MailboxWriter mailWriter;
-	private final ClaudeClient claudeClient;
-	private final SftpWriter sftpWriter;
-	private final MailConfig mailConfig;
-	private final Path customerCsvPath;
-	private final Path productCsvPath;
-	private final CustomOverrideResolver overrideResolver;
-	private final AppConfig config;
-	private final ConsecutiveFailureDetector failureDetector;
-	private final EventBus eventBus;
+  private final MailboxReader mailReader;
+  private final MailboxWriter mailWriter;
+  private final ClaudeClient claudeClient;
+  private final SftpWriter sftpWriter;
+  private final MailConfig mailConfig;
+  private final Path customerCsvPath;
+  private final Path productCsvPath;
+  private final CustomOverrideResolver overrideResolver;
+  private final AppConfig config;
+  private final ConsecutiveFailureDetector failureDetector;
+  private final EventBus eventBus;
 
-	// Cumulative counters for report card — reset by ReportCardScheduler
-	private final AtomicInteger totalSuccessCount = new AtomicInteger();
-	private final AtomicInteger totalFailCount = new AtomicInteger();
+  // Cumulative counters for report card — reset by ReportCardScheduler
+  private final AtomicInteger totalSuccessCount = new AtomicInteger();
+  private final AtomicInteger totalFailCount = new AtomicInteger();
 
-	public ParseBotService(AppConfig config, EventBus eventBus) throws IOException {
-		this.config = config;
-		this.eventBus = eventBus;
-		this.mailConfig = config.getMailConfig();
-		this.mailReader = new MailboxReader(config.getMailConfig(), eventBus);
-		this.mailWriter = new MailboxWriter(mailReader, eventBus);
+  public ParseBotService(AppConfig config, EventBus eventBus) throws IOException {
+    this.config = config;
+    this.eventBus = eventBus;
+    this.mailConfig = config.getMailConfig();
+    this.mailReader = new MailboxReader(config.getMailConfig(), eventBus);
+    this.mailWriter = new MailboxWriter(mailReader, eventBus);
 
-		this.claudeClient = new ClaudeClient(config.getClaudeConfig().getApiKey(), eventBus);
-		ReferenceDataConfig refData = config.getReferenceDataConfig();
-		this.customerCsvPath = Path.of(refData.getCustomerCsvPath());
-		this.productCsvPath = Path.of(refData.getProductCsvPath());
-		this.overrideResolver = new CustomOverrideResolver(refData.getCustomRulesDir(), refData.getCustomProductListsDir());
+    this.claudeClient = new ClaudeClient(config.getClaudeConfig().getApiKey(), eventBus);
+    ReferenceDataConfig refData = config.getReferenceDataConfig();
+    this.customerCsvPath = Path.of(refData.getCustomerCsvPath());
+    this.productCsvPath = Path.of(refData.getProductCsvPath());
+    this.overrideResolver = new CustomOverrideResolver(refData.getCustomRulesDir(), refData.getCustomProductListsDir());
 
-		this.sftpWriter = new SftpWriter(config.getSftpConfig(), eventBus);
-		this.failureDetector = new ConsecutiveFailureDetector(config.getEventsConfig().getConsecutiveFailureThreshold(), eventBus);
-	}
+    this.sftpWriter = new SftpWriter(config.getSftpConfig(), eventBus);
+    this.failureDetector = new ConsecutiveFailureDetector(config.getEventsConfig().getConsecutiveFailureThreshold(), eventBus);
+  }
 
-	public AtomicInteger getTotalSuccessCount() {
-		return totalSuccessCount;
-	}
+  public AtomicInteger getTotalSuccessCount() {
+    return totalSuccessCount;
+  }
 
-	public AtomicInteger getTotalFailCount() {
-		return totalFailCount;
-	}
+  public AtomicInteger getTotalFailCount() {
+    return totalFailCount;
+  }
 
-	public void run() {
-		try {
-			log.info("Starting pipeline run");
+  public void run() {
+    try {
+      log.info("Starting pipeline run");
 
-			String customerCsv = Files.readString(customerCsvPath);
-			String productCsv = Files.readString(productCsvPath);
+      String customerCsv = Files.readString(customerCsvPath);
+      String productCsv = Files.readString(productCsvPath);
 
-			PriceMatrix priceMatrix = null;
-			String priceMatrixPath = config.getReferenceDataConfig().getPriceMatrixCsvPath();
-			if (!priceMatrixPath.isBlank()) {
-				Path matrixPath = Path.of(priceMatrixPath);
-				if (Files.exists(matrixPath)) {
-					priceMatrix = PriceMatrix.load(Files.readString(matrixPath));
-				} else {
-					log.warn("Price matrix CSV configured but not found: {}", matrixPath);
-				}
-			}
+      PriceMatrix priceMatrix = null;
+      String priceMatrixPath = config.getReferenceDataConfig().getPriceMatrixCsvPath();
+      if (!priceMatrixPath.isBlank()) {
+        Path matrixPath = Path.of(priceMatrixPath);
+        if (Files.exists(matrixPath)) {
+          priceMatrix = PriceMatrix.load(Files.readString(matrixPath));
+        } else {
+          log.warn("Price matrix CSV configured but not found: {}", matrixPath);
+        }
+      }
 
-			DataParser parser = new DataParser(claudeClient, customerCsv, productCsv, priceMatrix);
+      DataParser parser = new DataParser(claudeClient, customerCsv, productCsv, priceMatrix);
 
-			// Collect raw data from all sources
-			List<RawMailboxData> rawData = new ArrayList<>();
-			rawData.addAll(mailReader.read());
+      // Collect raw data from all sources
+      List<RawMailboxData> rawData = new ArrayList<>();
+      rawData.addAll(mailReader.read());
 
-			if (rawData.isEmpty()) {
-				log.info("No data to process");
-				return;
-			}
+      if (rawData.isEmpty()) {
+        log.info("No data to process");
+        return;
+      }
 
-			// Process each item individually
-			int successCount = 0;
-			int failCount = 0;
+      // Process each item individually
+      int successCount = 0;
+      int failCount = 0;
 
-			for (RawMailboxData email : rawData) {
-				try {
-					String sender = email.getSenderEmail();
-					String customRules = overrideResolver.resolveRules(sender);
-					String customProductList = overrideResolver.resolveProductList(sender);
+      for (RawMailboxData email : rawData) {
+        try {
+          String sender = email.getSenderEmail();
+          String customRules = overrideResolver.resolveRules(sender);
+          String customProductList = overrideResolver.resolveProductList(sender);
 
-					if (customRules != null || customProductList != null) {
-						log.info("Using custom overrides for sender '{}'", sender);
-					}
+          if (customRules != null || customProductList != null) {
+            log.info("Using custom overrides for sender '{}'", sender);
+          }
 
-					List<TransformedData> transformed = parser.parse(email, customRules, customProductList);
-					if (!transformed.isEmpty()) {
-						sftpWriter.write(transformed);
-					}
-					onSuccess(email, mailWriter);
-					successCount++;
-					totalSuccessCount.incrementAndGet();
-					failureDetector.recordSuccess();
-				} catch (Exception e) {
-					log.error("Failed to process: {}", email.getName(), e);
-					eventBus.publish(Event.create(
-							EventType.MESSAGE_PROCESSING_FAILED,
-							EventSeverity.AUDIT,
-							"Failed to process message: " + email.getName(),
-							Map.of(
-									"messageName", email.getName() != null ? email.getName() : "<unknown>",
-									"sender", email.getSenderEmail() != null ? email.getSenderEmail() : "<unknown>",
-									"error", String.valueOf(e.getMessage())
-							)));
-					onFailure(email, mailWriter);
-					failCount++;
-					totalFailCount.incrementAndGet();
-					failureDetector.recordFailure(email.getName(), e.getMessage());
-				}
-			}
+          List<TransformedData> transformed = parser.parse(email, customRules, customProductList);
+          if (!transformed.isEmpty()) {
+            sftpWriter.write(transformed);
+          }
+          onSuccess(email, mailWriter);
+          successCount++;
+          totalSuccessCount.incrementAndGet();
+          failureDetector.recordSuccess();
+        } catch (Exception e) {
+          log.error("Failed to process: {}", email.getName(), e);
+          eventBus.publish(Event.create(
+              EventType.MESSAGE_PROCESSING_FAILED,
+              EventSeverity.AUDIT,
+              "Failed to process message: " + email.getName(),
+              Map.of(
+                  "messageName", email.getName() != null ? email.getName() : "<unknown>",
+                  "sender", email.getSenderEmail() != null ? email.getSenderEmail() : "<unknown>",
+                  "error", String.valueOf(e.getMessage())
+              )));
+          onFailure(email, mailWriter);
+          failCount++;
+          totalFailCount.incrementAndGet();
+          failureDetector.recordFailure(email.getName(), e.getMessage());
+        }
+      }
 
-			log.info("Pipeline run complete: {} succeeded, {} failed", successCount, failCount);
-		} catch (Exception e) {
-			log.error("Pipeline run failed", e);
-			eventBus.publish(Event.create(
-					EventType.PIPELINE_RUN_FAILED,
-					EventSeverity.AUDIT,
-					"Pipeline run failed: " + e.getMessage(),
-					Map.of("error", String.valueOf(e.getMessage()))));
-		}
-	}
+      log.info("Pipeline run complete: {} succeeded, {} failed", successCount, failCount);
+    } catch (Exception e) {
+      log.error("Pipeline run failed", e);
+      eventBus.publish(Event.create(
+          EventType.PIPELINE_RUN_FAILED,
+          EventSeverity.AUDIT,
+          "Pipeline run failed: " + e.getMessage(),
+          Map.of("error", String.valueOf(e.getMessage()))));
+    }
+  }
 
-	public void close() {
-		mailReader.close();
-	}
+  public void close() {
+    mailReader.close();
+  }
 
-	private void onSuccess(RawMailboxData mbd, MailboxWriter mailWriter) {
-		mailWriter.moveToFolder(mbd.getSourceMessage(), mailConfig.getSuccessFolder());
-	}
+  private void onSuccess(RawMailboxData mbd, MailboxWriter mailWriter) {
+    mailWriter.moveToFolder(mbd.getSourceMessage(), mailConfig.getSuccessFolder());
+  }
 
-	private void onFailure(RawMailboxData mbd, MailboxWriter mailWriter) {
-		mailWriter.moveToFolder(mbd.getSourceMessage(), mailConfig.getFailureFolder());
-	}
+  private void onFailure(RawMailboxData mbd, MailboxWriter mailWriter) {
+    mailWriter.moveToFolder(mbd.getSourceMessage(), mailConfig.getFailureFolder());
+  }
 }

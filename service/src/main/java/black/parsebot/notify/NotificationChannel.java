@@ -4,5 +4,5 @@ import black.parsebot.event.Event;
 
 public interface NotificationChannel {
 
-	void send(Event event) throws Exception;
+  void send(Event event) throws Exception;
 }

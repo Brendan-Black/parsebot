@@ -3,19 +3,19 @@ package black.parsebot.model.raw;
 
 public sealed abstract class RawData permits RawFileData, RawMailboxData, RawSftpData {
 
-    private final String name;
-    private final byte[] content;
+  private final String name;
+  private final byte[] content;
 
-    protected RawData(String name, byte[] content) {
-        this.name = name;
-        this.content = content;
-    }
+  protected RawData(String name, byte[] content) {
+    this.name = name;
+    this.content = content;
+  }
 
-    public String getName() {
-        return name;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public byte[] getContent() {
-        return content;
-    }
+  public byte[] getContent() {
+    return content;
+  }
 }

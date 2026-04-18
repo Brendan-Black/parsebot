@@ -1,33 +1,33 @@
 plugins {
-    id 'java'
-    id 'application'
+  id 'java'
+  id 'application'
 }
 
 application {
-    mainClass = 'black.parsebot.installer.Main'
+  mainClass = 'black.parsebot.installer.Main'
 }
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
-    }
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(25)
+  }
 }
 
 repositories {
-    mavenCentral()
+  mavenCentral()
 }
 
 dependencies {
-    implementation project(':shared')
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+  implementation project(':shared')
+  testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+  useJUnitPlatform()
 }
 
 tasks.named('run') {
-    standardInput = System.in
-    jvmArgs += '-Dconsole.attached=false'
+  standardInput = System.in
+  jvmArgs += '-Dconsole.attached=false'
 }

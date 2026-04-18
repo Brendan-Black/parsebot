@@ -5,9 +5,9 @@ import java.util.List;
 
 public interface Storage<T> {
 
-	void append(T item);
+  void append(T item);
 
-	List<T> readAll() throws IOException;
+  List<T> readAll() throws IOException;
 
-	List<T> readLast(int n) throws IOException;
+  List<T> readLast(int n) throws IOException;
 }

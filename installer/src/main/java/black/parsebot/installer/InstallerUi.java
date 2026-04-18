@@ -4,7 +4,7 @@ import java.util.Map;
 
 public interface InstallerUi {
 
-    String showLauncherDialog();
+  String showLauncherDialog();
 
-    Map<String, String> showConfigDialog(Map<String, String> existing);
+  Map<String, String> showConfigDialog(Map<String, String> existing);
 }

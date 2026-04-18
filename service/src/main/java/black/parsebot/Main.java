@@ -27,74 +27,74 @@ import black.parsebot.storage.Storage;
 
 public class Main {
 
-    private static final Logger log = LoggerFactory.getLogger(Main.class);
+  private static final Logger log = LoggerFactory.getLogger(Main.class);
 
-    public static void main(String[] args) {
-        log.info("ParseBot starting up");
+  public static void main(String[] args) {
+    log.info("ParseBot starting up");
 
-        AppConfig config = AppConfig.load();
+    AppConfig config = AppConfig.load();
 
-        // Initialize event system
-        EventsConfig eventsConfig = config.getEventsConfig();
-        NotifyConfig notifyConfig = config.getNotifyConfig();
+    // Initialize event system
+    EventsConfig eventsConfig = config.getEventsConfig();
+    NotifyConfig notifyConfig = config.getNotifyConfig();
 
-        // Build notification channels
-        List<NotificationChannel> criticalChannels = new ArrayList<>();
-        List<NotificationChannel> infoChannels = new ArrayList<>();
+    // Build notification channels
+    List<NotificationChannel> criticalChannels = new ArrayList<>();
+    List<NotificationChannel> infoChannels = new ArrayList<>();
 
-        if (notifyConfig.isSmtpEnabled()) {
-            String to = notifyConfig.getSmtpTo();
-            String toUrgent = notifyConfig.getSmtpToUrgent();
-            if (!to.isBlank()) {
-                infoChannels.add(new SmtpChannel(notifyConfig, config.getMailConfig(), to));
-                log.info("SMTP notification channel enabled for info events");
-            }
-            if (!toUrgent.isBlank()) {
-                criticalChannels.add(new SmtpChannel(notifyConfig, config.getMailConfig(), toUrgent));
-                log.info("SMTP notification channel enabled for urgent events");
-            }
-        }
-        if (notifyConfig.isTeamsEnabled()) {
-            criticalChannels.add(new TeamsWebhookChannel(notifyConfig));
-            log.info("Teams webhook notification channel enabled");
-        }
-
-        Storage<Event> eventStorage = new Slf4jStorage<>(Event.class, "EVENT: ", Path.of("logs"), "parsebot*.log");
-        NotificationDispatcher dispatcher = new NotificationDispatcher(criticalChannels, infoChannels, eventStorage);
-        EventBus eventBus = new EventBus(eventStorage, dispatcher);
-
-        ParseBotService service;
-        try {
-            service = new ParseBotService(config, eventBus);
-        } catch (IOException e) {
-            log.error("Failed to initialize ParseBotService", e);
-            return;
-        }
-
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
-        long intervalSeconds = config.getGeneralConfig().getPollIntervalSeconds();
-
-        // Schedule main pipeline
-        scheduler.scheduleWithFixedDelay(service::run, 0, intervalSeconds, TimeUnit.SECONDS);
-
-        // Schedule report card checker (runs every minute)
-        ReportCardScheduler reportCard = new ReportCardScheduler(
-                eventsConfig, eventBus,
-                service.getTotalSuccessCount(), service.getTotalFailCount());
-        scheduler.scheduleWithFixedDelay(reportCard, 1, 1, TimeUnit.MINUTES);
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            log.info("ParseBot shutting down");
-            scheduler.shutdown();
-            try {
-                if (!scheduler.awaitTermination(30, TimeUnit.SECONDS)) {
-                    scheduler.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                scheduler.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
-            service.close();
-        }));
+    if (notifyConfig.isSmtpEnabled()) {
+      String to = notifyConfig.getSmtpTo();
+      String toUrgent = notifyConfig.getSmtpToUrgent();
+      if (!to.isBlank()) {
+        infoChannels.add(new SmtpChannel(notifyConfig, config.getMailConfig(), to));
+        log.info("SMTP notification channel enabled for info events");
+      }
+      if (!toUrgent.isBlank()) {
+        criticalChannels.add(new SmtpChannel(notifyConfig, config.getMailConfig(), toUrgent));
+        log.info("SMTP notification channel enabled for urgent events");
+      }
     }
+    if (notifyConfig.isTeamsEnabled()) {
+      criticalChannels.add(new TeamsWebhookChannel(notifyConfig));
+      log.info("Teams webhook notification channel enabled");
+    }
+
+    Storage<Event> eventStorage = new Slf4jStorage<>(Event.class, "EVENT: ", Path.of("logs"), "parsebot*.log");
+    NotificationDispatcher dispatcher = new NotificationDispatcher(criticalChannels, infoChannels, eventStorage);
+    EventBus eventBus = new EventBus(eventStorage, dispatcher);
+
+    ParseBotService service;
+    try {
+      service = new ParseBotService(config, eventBus);
+    } catch (IOException e) {
+      log.error("Failed to initialize ParseBotService", e);
+      return;
+    }
+
+    ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+    long intervalSeconds = config.getGeneralConfig().getPollIntervalSeconds();
+
+    // Schedule main pipeline
+    scheduler.scheduleWithFixedDelay(service::run, 0, intervalSeconds, TimeUnit.SECONDS);
+
+    // Schedule report card checker (runs every minute)
+    ReportCardScheduler reportCard = new ReportCardScheduler(
+        eventsConfig, eventBus,
+        service.getTotalSuccessCount(), service.getTotalFailCount());
+    scheduler.scheduleWithFixedDelay(reportCard, 1, 1, TimeUnit.MINUTES);
+
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      log.info("ParseBot shutting down");
+      scheduler.shutdown();
+      try {
+        if (!scheduler.awaitTermination(30, TimeUnit.SECONDS)) {
+          scheduler.shutdownNow();
+        }
+      } catch (InterruptedException e) {
+        scheduler.shutdownNow();
+        Thread.currentThread().interrupt();
+      }
+      service.close();
+    }));
+  }
 }
