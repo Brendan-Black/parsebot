@@ -1,6 +1,5 @@
 package black.parsebot.event;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -16,16 +15,13 @@ public class ReportCardScheduler implements Runnable {
 
 	private static final Logger log = LoggerFactory.getLogger(ReportCardScheduler.class);
 
-	private final String schedule;
 	private final LocalTime reportTime;
 	private final EventBus eventBus;
 	private final AtomicInteger successCount;
 	private final AtomicInteger failCount;
 	private LocalDate lastReportDate;
 
-	public ReportCardScheduler(AppConfig.EventsConfig config, EventBus eventBus,
-							   AtomicInteger successCount, AtomicInteger failCount) {
-		this.schedule = config.getReportSchedule();
+	public ReportCardScheduler(AppConfig.EventsConfig config, EventBus eventBus,  AtomicInteger successCount, AtomicInteger failCount) {
 		this.reportTime = LocalTime.parse(config.getReportTime(), DateTimeFormatter.ofPattern("HH:mm"));
 		this.eventBus = eventBus;
 		this.successCount = successCount;
@@ -46,23 +42,18 @@ public class ReportCardScheduler implements Runnable {
 				return;
 			}
 
-			if ("weekly".equalsIgnoreCase(schedule) && today.getDayOfWeek() != DayOfWeek.MONDAY) {
-				return;
-			}
-
 			int success = successCount.getAndSet(0);
 			int fail = failCount.getAndSet(0);
 			int total = success + fail;
 
-			String message = String.format("Report card (%s): %d processed, %d succeeded, %d failed",
-					schedule, total, success, fail);
+			String message = String.format("Report card: %d processed, %d succeeded, %d failed",
+					total, success, fail);
 
 			eventBus.publish(Event.create(
 					EventType.REPORT_CARD,
 					EventSeverity.INFO,
 					message,
 					Map.of(
-							"period", schedule,
 							"totalProcessed", String.valueOf(total),
 							"successCount", String.valueOf(success),
 							"failCount", String.valueOf(fail)
