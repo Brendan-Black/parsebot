@@ -5,7 +5,8 @@ import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import black.parsebot.config.AppConfig;
+import black.parsebot.config.MailConfig;
+import black.parsebot.config.NotifyConfig;
 import black.parsebot.event.Event;
 import jakarta.mail.Authenticator;
 import jakarta.mail.Message;
@@ -19,11 +20,11 @@ public class SmtpChannel implements NotificationChannel {
 
 	private static final Logger log = LoggerFactory.getLogger(SmtpChannel.class);
 
-	private final AppConfig.NotifyConfig notifyConfig;
-	private final AppConfig.MailConfig mailConfig;
+	private final NotifyConfig notifyConfig;
+	private final MailConfig mailConfig;
 	private final String recipients;
 
-	public SmtpChannel(AppConfig.NotifyConfig notifyConfig, AppConfig.MailConfig mailConfig, String recipients) {
+	public SmtpChannel(NotifyConfig notifyConfig, MailConfig mailConfig, String recipients) {
 		this.notifyConfig = notifyConfig;
 		this.mailConfig = mailConfig;
 		this.recipients = recipients;

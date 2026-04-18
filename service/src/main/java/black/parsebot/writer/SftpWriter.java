@@ -10,7 +10,7 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 
-import black.parsebot.config.AppConfig.SftpConfig;
+import black.parsebot.config.SftpConfig;
 import black.parsebot.model.TransformedData;
 
 public class SftpWriter {

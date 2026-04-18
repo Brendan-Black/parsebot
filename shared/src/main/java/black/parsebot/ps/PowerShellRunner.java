@@ -19,6 +19,10 @@ public final class PowerShellRunner {
 		return value.replace("'", "''");
 	}
 
+	public static String escapeSingleLine(String value) {
+		return escapeSingleQuote(value).replace("\n", " ").replace("\r", "");
+	}
+
 	public static int run(String script, String tempPrefix) throws IOException, InterruptedException {
 		Path scriptFile = Files.createTempFile(tempPrefix, ".ps1");
 		Files.writeString(scriptFile, script);

@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
-import black.parsebot.config.AppConfig;
+import black.parsebot.config.NotifyConfig;
 import black.parsebot.event.Event;
 import black.parsebot.event.EventSeverity;
 
@@ -24,7 +24,7 @@ public class TeamsWebhookChannel implements NotificationChannel {
 	private final HttpClient httpClient;
 	private final Gson gson;
 
-	public TeamsWebhookChannel(AppConfig.NotifyConfig config) {
+	public TeamsWebhookChannel(NotifyConfig config) {
 		this.webhookUrl = config.getTeamsWebhookUrl();
 		this.httpClient = HttpClient.newHttpClient();
 		this.gson = new Gson();

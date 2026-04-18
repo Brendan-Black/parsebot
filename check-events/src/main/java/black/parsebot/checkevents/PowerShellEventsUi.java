@@ -42,7 +42,7 @@ final class PowerShellEventsUi implements EventsUi {
                 $form.Controls.Add($btnOk)
 
                 [void]$form.ShowDialog()
-                """.formatted(escapePsString(logDir.toString()));
+                """.formatted(PowerShellRunner.escapeSingleLine(logDir.toString()));
 
         runPowerShell(ps);
     }
@@ -96,11 +96,11 @@ final class PowerShellEventsUi implements EventsUi {
 
             ps.append(String.format(
                     "$idx = $dgv.Rows.Add('%s', '%s', '%s', '%s', '%s')\n",
-                    escapePsString(timestamp),
-                    escapePsString(type),
-                    escapePsString(severity),
-                    escapePsString(message),
-                    escapePsString(details)));
+                    PowerShellRunner.escapeSingleLine(timestamp),
+                    PowerShellRunner.escapeSingleLine(type),
+                    PowerShellRunner.escapeSingleLine(severity),
+                    PowerShellRunner.escapeSingleLine(message),
+                    PowerShellRunner.escapeSingleLine(details)));
 
             if (event.severity() == EventSeverity.CRITICAL) {
                 ps.append("$dgv.Rows[$idx].DefaultCellStyle.BackColor = [System.Drawing.Color]::MistyRose\n");
@@ -115,7 +115,7 @@ final class PowerShellEventsUi implements EventsUi {
                 "$status = New-Object System.Windows.Forms.StatusBar; " +
                 "$status.Text = 'Logs: %s'; " +
                 "$form.Controls.Add($status)\n",
-                escapePsString(logDir.toString())));
+                PowerShellRunner.escapeSingleLine(logDir.toString())));
 
         ps.append("\n[void]$form.ShowDialog()\n");
 
@@ -130,10 +130,6 @@ final class PowerShellEventsUi implements EventsUi {
             sb.append(k).append("=").append(v);
         });
         return sb.toString();
-    }
-
-    private static String escapePsString(String input) {
-        return PowerShellRunner.escapeSingleQuote(input).replace("\n", " ").replace("\r", "");
     }
 
     private static void runPowerShell(String script) {

@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import black.parsebot.config.AppConfig;
 import black.parsebot.config.CustomOverrideResolver;
+import black.parsebot.config.MailConfig;
+import black.parsebot.config.ReferenceDataConfig;
 import black.parsebot.event.ConsecutiveFailureDetector;
 import black.parsebot.event.EventBus;
 import black.parsebot.model.TransformedData;
@@ -31,7 +33,7 @@ public class ParseBotService {
 	private final MailboxWriter mailWriter;
 	private final ClaudeClient claudeClient;
 	private final SftpWriter sftpWriter;
-	private final AppConfig.MailConfig mailConfig;
+	private final MailConfig mailConfig;
 	private final Path customerCsvPath;
 	private final Path productCsvPath;
 	private final CustomOverrideResolver overrideResolver;
@@ -49,7 +51,7 @@ public class ParseBotService {
 		this.mailWriter = new MailboxWriter(mailReader);
 
 		this.claudeClient = new ClaudeClient(config.getClaudeConfig().getApiKey());
-		AppConfig.ReferenceDataConfig refData = config.getReferenceDataConfig();
+		ReferenceDataConfig refData = config.getReferenceDataConfig();
 		this.customerCsvPath = Path.of(refData.getCustomerCsvPath());
 		this.productCsvPath = Path.of(refData.getProductCsvPath());
 		this.overrideResolver = new CustomOverrideResolver(refData.getCustomRulesDir(), refData.getCustomProductListsDir());

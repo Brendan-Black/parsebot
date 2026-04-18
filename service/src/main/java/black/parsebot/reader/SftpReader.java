@@ -1,6 +1,7 @@
 package black.parsebot.reader;
 
 import black.parsebot.config.AppConfig;
+import black.parsebot.config.SftpConfig;
 import black.parsebot.model.raw.RawSftpData;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
@@ -17,7 +18,7 @@ public class SftpReader {
 
     private static final Logger log = LoggerFactory.getLogger(SftpReader.class);
 
-    private final AppConfig.SftpConfig config;
+    private final SftpConfig config;
 
     public SftpReader(AppConfig config) {
         this.config = config.getSftpConfig();

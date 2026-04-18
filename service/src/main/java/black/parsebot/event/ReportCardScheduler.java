@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import black.parsebot.config.AppConfig;
+import black.parsebot.config.EventsConfig;
 
 public class ReportCardScheduler implements Runnable {
 
@@ -21,7 +21,7 @@ public class ReportCardScheduler implements Runnable {
 	private final AtomicInteger failCount;
 	private LocalDate lastReportDate;
 
-	public ReportCardScheduler(AppConfig.EventsConfig config, EventBus eventBus,  AtomicInteger successCount, AtomicInteger failCount) {
+	public ReportCardScheduler(EventsConfig config, EventBus eventBus,  AtomicInteger successCount, AtomicInteger failCount) {
 		this.reportTime = LocalTime.parse(config.getReportTime(), DateTimeFormatter.ofPattern("HH:mm"));
 		this.eventBus = eventBus;
 		this.successCount = successCount;

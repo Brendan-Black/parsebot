@@ -1,6 +1,6 @@
 package black.parsebot.reader;
 
-import black.parsebot.config.AppConfig.MailConfig;
+import black.parsebot.config.MailConfig;
 import black.parsebot.model.raw.RawMailboxData;
 import jakarta.mail.*;
 import jakarta.mail.internet.MimeMultipart;

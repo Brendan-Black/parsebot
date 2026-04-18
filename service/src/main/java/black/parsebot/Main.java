@@ -11,6 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import black.parsebot.config.AppConfig;
+import black.parsebot.config.EventsConfig;
+import black.parsebot.config.NotifyConfig;
 import black.parsebot.event.EventBus;
 import black.parsebot.event.ReportCardScheduler;
 import black.parsebot.notify.NotificationChannel;
@@ -29,8 +31,8 @@ public class Main {
         AppConfig config = AppConfig.load();
 
         // Initialize event system
-        AppConfig.EventsConfig eventsConfig = config.getEventsConfig();
-        AppConfig.NotifyConfig notifyConfig = config.getNotifyConfig();
+        EventsConfig eventsConfig = config.getEventsConfig();
+        NotifyConfig notifyConfig = config.getNotifyConfig();
 
         // Build notification channels
         List<NotificationChannel> criticalChannels = new ArrayList<>();
