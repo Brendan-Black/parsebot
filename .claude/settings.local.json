@@ -6,7 +6,8 @@
       "Bash(git mv:*)",
       "Bash(./gradlew :service:build :installer:build)",
       "Bash(./gradlew :service:dependencies --configuration runtimeClasspath)",
-      "Bash(xargs ls:*)"
+      "Bash(xargs ls:*)",
+      "Bash(./gradlew :installer:build:*)"
     ]
   }
 }

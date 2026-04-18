@@ -5,12 +5,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import black.parsebot.config.AppConfig;
 import black.parsebot.config.CustomOverrideResolver;
+import black.parsebot.event.ConsecutiveFailureDetector;
+import black.parsebot.event.EventBus;
 import black.parsebot.model.TransformedData;
 import black.parsebot.model.raw.RawMailboxData;
 import black.parsebot.parser.ClaudeClient;
@@ -33,19 +36,35 @@ public class ParseBotService {
 	private final Path productCsvPath;
 	private final CustomOverrideResolver overrideResolver;
 	private final AppConfig config;
+	private final ConsecutiveFailureDetector failureDetector;
 
-	public ParseBotService(AppConfig config) throws IOException {
+	// Cumulative counters for report card — reset by ReportCardScheduler
+	private final AtomicInteger totalSuccessCount = new AtomicInteger();
+	private final AtomicInteger totalFailCount = new AtomicInteger();
+
+	public ParseBotService(AppConfig config, EventBus eventBus) throws IOException {
 		this.config = config;
 		this.mailConfig = config.getMailConfig();
 		this.mailReader = new MailboxReader(config.getMailConfig());
 		this.mailWriter = new MailboxWriter(mailReader);
 
-		this.claudeClient = new ClaudeClient(config.getClaudeApiKey());
-		this.customerCsvPath = Path.of(config.getCustomerCsvPath());
-		this.productCsvPath = Path.of(config.getProductCsvPath());
-		this.overrideResolver = new CustomOverrideResolver(config.getCustomRulesDir(), config.getCustomProductListsDir());
+		this.claudeClient = new ClaudeClient(config.getClaudeConfig().getApiKey());
+		AppConfig.ReferenceDataConfig refData = config.getReferenceDataConfig();
+		this.customerCsvPath = Path.of(refData.getCustomerCsvPath());
+		this.productCsvPath = Path.of(refData.getProductCsvPath());
+		this.overrideResolver = new CustomOverrideResolver(refData.getCustomRulesDir(), refData.getCustomProductListsDir());
 
 		this.sftpWriter = new SftpWriter(config.getSftpConfig());
+		this.failureDetector = new ConsecutiveFailureDetector(
+				config.getEventsConfig().getConsecutiveFailureThreshold(), eventBus);
+	}
+
+	public AtomicInteger getTotalSuccessCount() {
+		return totalSuccessCount;
+	}
+
+	public AtomicInteger getTotalFailCount() {
+		return totalFailCount;
 	}
 
 	public void run() {
@@ -56,7 +75,7 @@ public class ParseBotService {
 			String productCsv = Files.readString(productCsvPath);
 
 			PriceMatrix priceMatrix = null;
-			String priceMatrixPath = config.getPriceMatrixCsvPath();
+			String priceMatrixPath = config.getReferenceDataConfig().getPriceMatrixCsvPath();
 			if (!priceMatrixPath.isBlank()) {
 				Path matrixPath = Path.of(priceMatrixPath);
 				if (Files.exists(matrixPath)) {
@@ -97,10 +116,14 @@ public class ParseBotService {
 					}
 					onSuccess(email, mailWriter);
 					successCount++;
+					totalSuccessCount.incrementAndGet();
+					failureDetector.recordSuccess();
 				} catch (Exception e) {
 					log.error("Failed to process: {}", email.getName(), e);
 					onFailure(email, mailWriter);
 					failCount++;
+					totalFailCount.incrementAndGet();
+					failureDetector.recordFailure(email.getName(), e.getMessage());
 				}
 			}
 

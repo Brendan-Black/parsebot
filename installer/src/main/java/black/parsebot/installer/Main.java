@@ -18,7 +18,11 @@ public class Main {
 
     private record Field(String key, String label, String defaultValue) {}
 
-    private record Section(String title, List<Field> fields) {}
+    private record Section(String title, List<Field> fields, String hint) {
+        Section(String title, List<Field> fields) {
+            this(title, fields, null);
+        }
+    }
 
     private static final List<Section> SECTIONS = List.of(
             new Section("General", List.of(
@@ -51,6 +55,40 @@ public class Main {
                     new Field("sftp.password",         "Password",         ""),
                     new Field("sftp.private.key",      "Private Key Path", ""),
                     new Field("sftp.remote.directory", "Remote Directory", "/upload")
+            )),
+            new Section("Events", List.of(
+                    new Field("events.consecutive.failure.threshold", "Consecutive Failure Threshold",   "3"),
+                    new Field("events.report.schedule",               "Report Schedule (daily/weekly)",  "daily"),
+                    new Field("events.report.time",                   "Report Time (HH:mm)",             "08:00")
+            )),
+            new Section("Notifications - Email (SMTP)", List.of(
+                    new Field("notify.smtp.enabled",  "Enabled (true/false)", "false"),
+                    new Field("notify.smtp.host",     "SMTP Host",            ""),
+                    new Field("notify.smtp.port",     "SMTP Port",            "587"),
+                    new Field("notify.smtp.to",       "To Addresses",         ""),
+                    new Field("notify.smtp.to.urgent", "Urgent To Addresses", ""),
+                    new Field("notify.smtp.starttls", "STARTTLS (true/false)","true")
+            ),
+                    "#@vtext.com (Verizon)\n" +
+                    "#@tmomail.net (T-Mobile)\n" +
+                    "#@txt.att.net (AT&T)\n" +
+                    "#@messaging.sprintpcs.com (Sprint)\n" +
+                    "#@msg.fi.google.com (Google Fi)\n" +
+                    "#@message.ting.com (Ting)\n" +
+                    "#@email.uscc.net (US Cellular)\n" +
+                    "#@sms.cricketwireless.net (Cricket)\n" +
+                    "#@myboostmobile.com (Boost)\n" +
+                    "#@text.republicwireless.com (Republic)\n" +
+                    "#@vmobl.com (Virgin Mobile)\n" +
+                    "#@mmst5.tracfone.com (Tracfone)\n" +
+                    "#@mymetropcs.com (Metro)\n" +
+                    "#@sms.mypage.com (PagePlus)\n" +
+                    "#@mailmymobile.net (Consumer Cellular)\n" +
+                    "#@cspire1.com (C-Spire)"
+            ),
+            new Section("Notifications - Teams", List.of(
+                    new Field("notify.teams.enabled",     "Enabled (true/false)", "false"),
+                    new Field("notify.teams.webhook.url", "Webhook URL",          "")
             ))
     );
 
@@ -242,124 +280,248 @@ public class Main {
         StringBuilder ps = new StringBuilder();
         ps.append("Add-Type -AssemblyName System.Windows.Forms\n");
         ps.append("Add-Type -AssemblyName System.Drawing\n");
-        ps.append("[System.Windows.Forms.Application]::EnableVisualStyles()\n");
+        ps.append("[System.Windows.Forms.Application]::EnableVisualStyles()\n\n");
 
         ps.append("$form = New-Object System.Windows.Forms.Form\n");
         ps.append("$form.Text = 'ParseBot Service Configuration'\n");
         ps.append("$form.StartPosition = 'CenterScreen'\n");
         ps.append("$form.FormBorderStyle = 'FixedDialog'\n");
         ps.append("$form.MaximizeBox = $false\n");
-        ps.append("$form.AutoScroll = $true\n");
+        ps.append("$form.ClientSize = New-Object System.Drawing.Size(560,400)\n\n");
+
+        // TabControl fills most of the form, buttons sit below
+        ps.append("$tabs = New-Object System.Windows.Forms.TabControl\n");
+        ps.append("$tabs.Location = New-Object System.Drawing.Point(10,10)\n");
+        ps.append("$tabs.Size = New-Object System.Drawing.Size(535,340)\n");
+        ps.append("$tabs.Multiline = $true\n");
+        ps.append("$tabs.Appearance = [System.Windows.Forms.TabAppearance]::FlatButtons\n");
+        ps.append("$form.Controls.Add($tabs)\n\n");
 
         Set<String> folderFields = Set.of("custom.rules.dir", "custom.productlists.dir");
         Set<String> fileFields = Set.of("csv.customers", "csv.products", "csv.pricematrix", "sftp.private.key");
+        Set<String> booleanFields = Set.of("notify.smtp.enabled", "notify.smtp.starttls", "notify.teams.enabled");
+        Set<String> multilineFields = Set.of("notify.smtp.to", "notify.smtp.to.urgent");
 
-        int y = 10;
         int fieldIndex = 0;
-        int sectionIndex = 0;
         List<String> keys = new ArrayList<>();
+        List<Boolean> isBooleanField = new ArrayList<>();
 
-        for (Section section : SECTIONS) {
-            // Section header
-            ps.append(String.format(
-                    "$sec%d = New-Object System.Windows.Forms.Label; " +
-                    "$sec%d.Location = New-Object System.Drawing.Point(10,%d); " +
-                    "$sec%d.Size = New-Object System.Drawing.Size(510,22); " +
-                    "$sec%d.Text = '%s'; " +
-                    "$sec%d.Font = New-Object System.Drawing.Font('Microsoft Sans Serif',9,[System.Drawing.FontStyle]::Bold); " +
-                    "$sec%d.BorderStyle = [System.Windows.Forms.BorderStyle]::Fixed3D; " +
-                    "$form.Controls.Add($sec%d)\n",
-                    sectionIndex, sectionIndex, y, sectionIndex, sectionIndex,
-                    section.title(), sectionIndex, sectionIndex, sectionIndex));
-            y += 28;
-            sectionIndex++;
+        for (int s = 0; s < SECTIONS.size(); s++) {
+            Section section = SECTIONS.get(s);
 
+            ps.append(String.format("$tab%d = New-Object System.Windows.Forms.TabPage\n", s));
+            ps.append(String.format("$tab%d.Text = '%s'\n", s, section.title()));
+            ps.append(String.format("$tab%d.AutoScroll = $true\n", s));
+            ps.append(String.format("$tabs.TabPages.Add($tab%d)\n\n", s));
+
+            int y = 15;
+            if (section.hint() != null) {
+                // Collapsible toggle link
+                ps.append(String.format(
+                        "$hintToggle%d = New-Object System.Windows.Forms.LinkLabel; " +
+                        "$hintToggle%d.Location = New-Object System.Drawing.Point(10,%d); " +
+                        "$hintToggle%d.Size = New-Object System.Drawing.Size(490,16); " +
+                        "$hintToggle%d.Text = '+ SMS carrier gateway reference'; " +
+                        "$tab%d.Controls.Add($hintToggle%d)\n",
+                        s, s, y, s, s, s, s));
+                y += 20;
+                // Detail panel with border (hidden by default)
+                ps.append(String.format(
+                        "$hintPanel%d = New-Object System.Windows.Forms.Panel; " +
+                        "$hintPanel%d.Location = New-Object System.Drawing.Point(10,%d); " +
+                        "$hintPanel%d.Size = New-Object System.Drawing.Size(495,230); " +
+                        "$hintPanel%d.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle; " +
+                        "$hintPanel%d.BackColor = [System.Drawing.Color]::FromArgb(245,245,250); " +
+                        "$hintPanel%d.Visible = $false; " +
+                        "$tab%d.Controls.Add($hintPanel%d)\n",
+                        s, s, y, s, s, s, s, s, s));
+                // DataGridView as a read-only table inside the panel
+                ps.append(String.format(
+                        "$hintGrid%d = New-Object System.Windows.Forms.DataGridView; " +
+                        "$hintGrid%d.Location = New-Object System.Drawing.Point(0,0); " +
+                        "$hintGrid%d.Size = New-Object System.Drawing.Size(493,228); " +
+                        "$hintGrid%d.Anchor = 'Top,Bottom,Left,Right'; " +
+                        "$hintGrid%d.ReadOnly = $true; " +
+                        "$hintGrid%d.AllowUserToAddRows = $false; " +
+                        "$hintGrid%d.AllowUserToDeleteRows = $false; " +
+                        "$hintGrid%d.AllowUserToResizeRows = $false; " +
+                        "$hintGrid%d.RowHeadersVisible = $false; " +
+                        "$hintGrid%d.SelectionMode = 'FullRowSelect'; " +
+                        "$hintGrid%d.BackgroundColor = [System.Drawing.Color]::FromArgb(245,245,250); " +
+                        "$hintGrid%d.BorderStyle = 'None'; " +
+                        "$hintGrid%d.AutoSizeColumnsMode = 'Fill'; " +
+                        "$hintGrid%d.ColumnHeadersDefaultCellStyle.BackColor = [System.Drawing.Color]::FromArgb(230,230,235); " +
+                        "$hintGrid%d.EnableHeadersVisualStyles = $false; " +
+                        "$hintGrid%d.Columns.Add('Gateway', 'Gateway Address') | Out-Null; " +
+                        "$hintGrid%d.Columns.Add('Carrier', 'Carrier') | Out-Null; " +
+                        "$hintGrid%d.Columns['Gateway'].FillWeight = 55; " +
+                        "$hintGrid%d.Columns['Carrier'].FillWeight = 45; " +
+                        "$hintPanel%d.Controls.Add($hintGrid%d)\n",
+                        s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s));
+                // Add rows
+                String[][] carriers = {
+                        {"#@vtext.com", "Verizon"},
+                        {"#@tmomail.net", "T-Mobile"},
+                        {"#@txt.att.net", "AT&T"},
+                        {"#@messaging.sprintpcs.com", "Sprint"},
+                        {"#@msg.fi.google.com", "Google Fi"},
+                        {"#@message.ting.com", "Ting"},
+                        {"#@email.uscc.net", "US Cellular"},
+                        {"#@sms.cricketwireless.net", "Cricket"},
+                        {"#@myboostmobile.com", "Boost"},
+                        {"#@text.republicwireless.com", "Republic"},
+                        {"#@vmobl.com", "Virgin Mobile"},
+                        {"#@mmst5.tracfone.com", "Tracfone"},
+                        {"#@mymetropcs.com", "Metro"},
+                        {"#@sms.mypage.com", "PagePlus"},
+                        {"#@mailmymobile.net", "Consumer Cellular"},
+                        {"#@cspire1.com", "C-Spire"},
+                };
+                for (String[] row : carriers) {
+                    ps.append(String.format("$hintGrid%d.Rows.Add('%s', '%s') | Out-Null\n", s, row[0], row[1]));
+                }
+                ps.append(String.format("$hintGrid%d.ClearSelection()\n", s));
+                // Toggle click handler
+                ps.append(String.format(
+                        "$hintToggle%d.Add_LinkClicked({ " +
+                        "if ($hintPanel%d.Visible) { " +
+                        "$hintPanel%d.Visible = $false; " +
+                        "$hintToggle%d.Text = '+ SMS carrier gateway reference' " +
+                        "} else { " +
+                        "$hintPanel%d.Visible = $true; " +
+                        "$hintToggle%d.Text = '- SMS carrier gateway reference' " +
+                        "} })\n",
+                        s, s, s, s, s, s));
+                y += 5; // small gap; detail panel overlaps when expanded since tab has AutoScroll
+            }
             for (Field field : section.fields()) {
                 String key = field.key();
                 String label = field.label();
                 String defaultVal = field.defaultValue();
                 boolean isPassword = key.contains("password") || key.contains("api.key");
                 boolean hasBrowse = folderFields.contains(key) || fileFields.contains(key);
+                boolean isBoolean = booleanFields.contains(key);
+                boolean isMultiline = multilineFields.contains(key);
                 keys.add(key);
+                isBooleanField.add(isBoolean);
+
+                // Strip "(true/false)" hint from label for boolean fields
+                String displayLabel = isBoolean ? label.replace(" (true/false)", "") : label;
 
                 ps.append(String.format(
                         "$lbl%d = New-Object System.Windows.Forms.Label; " +
-                        "$lbl%d.Location = New-Object System.Drawing.Point(20,%d); " +
+                        "$lbl%d.Location = New-Object System.Drawing.Point(10,%d); " +
                         "$lbl%d.Size = New-Object System.Drawing.Size(190,20); " +
                         "$lbl%d.Text = '%s'; " +
-                        "$form.Controls.Add($lbl%d)\n",
-                        fieldIndex, fieldIndex, y, fieldIndex, fieldIndex, label, fieldIndex));
+                        "$tab%d.Controls.Add($lbl%d)\n",
+                        fieldIndex, fieldIndex, y, fieldIndex, fieldIndex, displayLabel, s, fieldIndex));
 
-                int textBoxWidth = hasBrowse ? 230 : 300;
-                ps.append(String.format(
-                        "$txt%d = New-Object System.Windows.Forms.TextBox; " +
-                        "$txt%d.Location = New-Object System.Drawing.Point(220,%d); " +
-                        "$txt%d.Size = New-Object System.Drawing.Size(%d,20); " +
-                        "$txt%d.Text = '%s'",
-                        fieldIndex, fieldIndex, y, fieldIndex, textBoxWidth, fieldIndex, defaultVal));
-                if (isPassword) {
-                    ps.append(String.format("; $txt%d.UseSystemPasswordChar = $true", fieldIndex));
-                }
-                ps.append(String.format("; $form.Controls.Add($txt%d)\n", fieldIndex));
-
-                if (hasBrowse) {
+                if (isBoolean) {
+                    boolean defaultTrue = "true".equals(defaultVal);
+                    // Panel to isolate this radio button group
                     ps.append(String.format(
-                            "$btn%d = New-Object System.Windows.Forms.Button; " +
-                            "$btn%d.Location = New-Object System.Drawing.Point(455,%d); " +
-                            "$btn%d.Size = New-Object System.Drawing.Size(65,22); " +
-                            "$btn%d.Text = 'Browse'; " +
-                            "$form.Controls.Add($btn%d)\n",
-                            fieldIndex, fieldIndex, y, fieldIndex, fieldIndex, fieldIndex));
+                            "$pnl%d = New-Object System.Windows.Forms.Panel; " +
+                            "$pnl%d.Location = New-Object System.Drawing.Point(210,%d); " +
+                            "$pnl%d.Size = New-Object System.Drawing.Size(140,22); " +
+                            "$tab%d.Controls.Add($pnl%d)\n",
+                            fieldIndex, fieldIndex, y, fieldIndex, s, fieldIndex));
+                    // "Yes" radio
+                    ps.append(String.format(
+                            "$radYes%d = New-Object System.Windows.Forms.RadioButton; " +
+                            "$radYes%d.Location = New-Object System.Drawing.Point(0,0); " +
+                            "$radYes%d.Size = New-Object System.Drawing.Size(60,20); " +
+                            "$radYes%d.Text = 'Yes'; " +
+                            "$radYes%d.Checked = %s; " +
+                            "$pnl%d.Controls.Add($radYes%d)\n",
+                            fieldIndex, fieldIndex, fieldIndex, fieldIndex,
+                            fieldIndex, defaultTrue ? "$true" : "$false", fieldIndex, fieldIndex));
+                    // "No" radio
+                    ps.append(String.format(
+                            "$radNo%d = New-Object System.Windows.Forms.RadioButton; " +
+                            "$radNo%d.Location = New-Object System.Drawing.Point(70,0); " +
+                            "$radNo%d.Size = New-Object System.Drawing.Size(60,20); " +
+                            "$radNo%d.Text = 'No'; " +
+                            "$radNo%d.Checked = %s; " +
+                            "$pnl%d.Controls.Add($radNo%d)\n",
+                            fieldIndex, fieldIndex, fieldIndex, fieldIndex,
+                            fieldIndex, defaultTrue ? "$false" : "$true", fieldIndex, fieldIndex));
+                } else if (isMultiline) {
+                    ps.append(String.format(
+                            "$txt%d = New-Object System.Windows.Forms.TextBox; " +
+                            "$txt%d.Location = New-Object System.Drawing.Point(210,%d); " +
+                            "$txt%d.Size = New-Object System.Drawing.Size(300,60); " +
+                            "$txt%d.Multiline = $true; " +
+                            "$txt%d.ScrollBars = 'Vertical'; " +
+                            "$txt%d.AcceptsReturn = $true; " +
+                            "$txt%d.Text = '%s'; " +
+                            "$tab%d.Controls.Add($txt%d)\n",
+                            fieldIndex, fieldIndex, y, fieldIndex, fieldIndex,
+                            fieldIndex, fieldIndex, fieldIndex, defaultVal, s, fieldIndex));
+                    y += 40; // extra height for multiline
+                } else {
+                    int textBoxWidth = hasBrowse ? 230 : 300;
+                    ps.append(String.format(
+                            "$txt%d = New-Object System.Windows.Forms.TextBox; " +
+                            "$txt%d.Location = New-Object System.Drawing.Point(210,%d); " +
+                            "$txt%d.Size = New-Object System.Drawing.Size(%d,20); " +
+                            "$txt%d.Text = '%s'",
+                            fieldIndex, fieldIndex, y, fieldIndex, textBoxWidth, fieldIndex, defaultVal));
+                    if (isPassword) {
+                        ps.append(String.format("; $txt%d.UseSystemPasswordChar = $true", fieldIndex));
+                    }
+                    ps.append(String.format("; $tab%d.Controls.Add($txt%d)\n", s, fieldIndex));
 
-                    if (folderFields.contains(key)) {
+                    if (hasBrowse) {
                         ps.append(String.format(
-                                "$btn%d.Add_Click({ " +
-                                "$dlg = New-Object System.Windows.Forms.FolderBrowserDialog; " +
-                                "$dlg.Description = '%s'; " +
-                                "$dlg.ShowNewFolderButton = $true; " +
-                                "if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { " +
-                                "$txt%d.Text = $dlg.SelectedPath } })\n",
-                                fieldIndex, label, fieldIndex));
-                    } else {
-                        ps.append(String.format(
-                                "$btn%d.Add_Click({ " +
-                                "$dlg = New-Object System.Windows.Forms.OpenFileDialog; " +
-                                "$dlg.Title = '%s'; " +
-                                "$dlg.Filter = 'All Files (*.*)|*.*'; " +
-                                "if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { " +
-                                "$txt%d.Text = $dlg.FileName } })\n",
-                                fieldIndex, label, fieldIndex));
+                                "$btn%d = New-Object System.Windows.Forms.Button; " +
+                                "$btn%d.Location = New-Object System.Drawing.Point(445,%d); " +
+                                "$btn%d.Size = New-Object System.Drawing.Size(65,22); " +
+                                "$btn%d.Text = 'Browse'; " +
+                                "$tab%d.Controls.Add($btn%d)\n",
+                                fieldIndex, fieldIndex, y, fieldIndex, fieldIndex, s, fieldIndex));
+
+                        if (folderFields.contains(key)) {
+                            ps.append(String.format(
+                                    "$btn%d.Add_Click({ " +
+                                    "$dlg = New-Object System.Windows.Forms.FolderBrowserDialog; " +
+                                    "$dlg.Description = '%s'; " +
+                                    "$dlg.ShowNewFolderButton = $true; " +
+                                    "if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { " +
+                                    "$txt%d.Text = $dlg.SelectedPath } })\n",
+                                    fieldIndex, label, fieldIndex));
+                        } else {
+                            ps.append(String.format(
+                                    "$btn%d.Add_Click({ " +
+                                    "$dlg = New-Object System.Windows.Forms.OpenFileDialog; " +
+                                    "$dlg.Title = '%s'; " +
+                                    "$dlg.Filter = 'All Files (*.*)|*.*'; " +
+                                    "if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { " +
+                                    "$txt%d.Text = $dlg.FileName } })\n",
+                                    fieldIndex, label, fieldIndex));
+                        }
                     }
                 }
 
                 y += 30;
                 fieldIndex++;
             }
-
-            y += 10; // spacing between sections
         }
 
-        // Buttons
-        int buttonY = y + 10;
-        ps.append(String.format(
-                "$btnOk = New-Object System.Windows.Forms.Button; " +
-                "$btnOk.Location = New-Object System.Drawing.Point(340,%d); " +
+        // Install / Cancel buttons below the tab control
+        ps.append("\n$btnOk = New-Object System.Windows.Forms.Button; " +
+                "$btnOk.Location = New-Object System.Drawing.Point(360,358); " +
                 "$btnOk.Size = New-Object System.Drawing.Size(80,30); " +
                 "$btnOk.Text = 'Install'; " +
                 "$btnOk.DialogResult = [System.Windows.Forms.DialogResult]::OK; " +
                 "$form.AcceptButton = $btnOk; " +
-                "$form.Controls.Add($btnOk)\n", buttonY));
-        ps.append(String.format(
-                "$btnCancel = New-Object System.Windows.Forms.Button; " +
-                "$btnCancel.Location = New-Object System.Drawing.Point(440,%d); " +
+                "$form.Controls.Add($btnOk)\n");
+        ps.append("$btnCancel = New-Object System.Windows.Forms.Button; " +
+                "$btnCancel.Location = New-Object System.Drawing.Point(455,358); " +
                 "$btnCancel.Size = New-Object System.Drawing.Size(80,30); " +
                 "$btnCancel.Text = 'Cancel'; " +
                 "$btnCancel.DialogResult = [System.Windows.Forms.DialogResult]::Cancel; " +
                 "$form.CancelButton = $btnCancel; " +
-                "$form.Controls.Add($btnCancel)\n", buttonY));
-
-        int formHeight = buttonY + 80;
-        ps.append(String.format("$form.ClientSize = New-Object System.Drawing.Size(540,%d)\n", formHeight));
+                "$form.Controls.Add($btnCancel)\n");
 
         // Write results to a temp file so we don't depend on stdout piping
         try {
@@ -367,15 +529,26 @@ public class Main {
             resultFile.toFile().deleteOnExit();
             String resultPath = resultFile.toString().replace("\\", "\\\\");
 
-            ps.append("$form.TopMost = $true\n");
+            ps.append("\n$form.TopMost = $true\n");
             ps.append("$result = $form.ShowDialog()\n");
             ps.append(String.format(
                     "if ($result -ne [System.Windows.Forms.DialogResult]::OK) { Set-Content -Path '%s' -Value 'CANCELLED'; exit }\n",
                     resultPath));
 
-            ps.append(String.format("$out = @()\n"));
+            ps.append("$out = @()\n");
             for (int i = 0; i < keys.size(); i++) {
-                ps.append(String.format("$out += '%s=' + $txt%d.Text\n", keys.get(i), i));
+                if (isBooleanField.get(i)) {
+                    ps.append(String.format(
+                            "$out += '%s=' + $(if ($radYes%d.Checked) { 'true' } else { 'false' })\n",
+                            keys.get(i), i));
+                } else if (multilineFields.contains(keys.get(i))) {
+                    // Join newline-separated entries with commas for property storage
+                    ps.append(String.format(
+                            "$out += '%s=' + (($txt%d.Text -split \"`r?`n\" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }) -join ',')\n",
+                            keys.get(i), i));
+                } else {
+                    ps.append(String.format("$out += '%s=' + $txt%d.Text\n", keys.get(i), i));
+                }
             }
             ps.append(String.format("Set-Content -Path '%s' -Value ($out -join \"`n\")\n", resultPath));
 
