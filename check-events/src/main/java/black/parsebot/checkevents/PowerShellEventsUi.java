@@ -10,6 +10,7 @@ import java.util.Map;
 import black.parsebot.event.Event;
 import black.parsebot.event.EventSeverity;
 import black.parsebot.ps.PowerShellRunner;
+import black.parsebot.ps.WinFormsScript;
 
 final class PowerShellEventsUi implements EventsUi {
 
@@ -17,34 +18,15 @@ final class PowerShellEventsUi implements EventsUi {
 
     @Override
     public void showEmpty(Path logDir) {
-        String ps = PowerShellRunner.WINFORMS_PREAMBLE + """
+        StringBuilder ps = new StringBuilder();
+        ps.append(PowerShellRunner.WINFORMS_PREAMBLE).append('\n');
+        WinFormsScript.form(ps, "form", "ParseBot Events", 400, 120, true, true);
+        WinFormsScript.label(ps, "lbl", "form", 10, 20, 380, 40, "No events found in: " + logDir);
+        WinFormsScript.button(ps, "btnOk", "form", 160, 70, 80, 30, "OK", "OK");
+        ps.append("$form.AcceptButton = $btnOk\n");
+        ps.append("[void]$form.ShowDialog()\n");
 
-                $form = New-Object System.Windows.Forms.Form
-                $form.Text = 'ParseBot Events'
-                $form.StartPosition = 'CenterScreen'
-                $form.ClientSize = New-Object System.Drawing.Size(400,120)
-                $form.FormBorderStyle = 'FixedDialog'
-                $form.MaximizeBox = $false
-                $form.TopMost = $true
-
-                $lbl = New-Object System.Windows.Forms.Label
-                $lbl.Location = New-Object System.Drawing.Point(10,20)
-                $lbl.Size = New-Object System.Drawing.Size(380,40)
-                $lbl.Text = 'No events found in: %s'
-                $form.Controls.Add($lbl)
-
-                $btnOk = New-Object System.Windows.Forms.Button
-                $btnOk.Location = New-Object System.Drawing.Point(160,70)
-                $btnOk.Size = New-Object System.Drawing.Size(80,30)
-                $btnOk.Text = 'OK'
-                $btnOk.DialogResult = [System.Windows.Forms.DialogResult]::OK
-                $form.AcceptButton = $btnOk
-                $form.Controls.Add($btnOk)
-
-                [void]$form.ShowDialog()
-                """.formatted(PowerShellRunner.escapeSingleLine(logDir.toString()));
-
-        runPowerShell(ps);
+        runPowerShell(ps.toString());
     }
 
     @Override
@@ -52,38 +34,14 @@ final class PowerShellEventsUi implements EventsUi {
         StringBuilder ps = new StringBuilder();
         ps.append(PowerShellRunner.WINFORMS_PREAMBLE).append('\n');
 
-        ps.append("$form = New-Object System.Windows.Forms.Form\n");
-        ps.append("$form.Text = 'ParseBot Events (" + events.size() + " entries)'\n");
-        ps.append("$form.StartPosition = 'CenterScreen'\n");
-        ps.append("$form.ClientSize = New-Object System.Drawing.Size(900,500)\n");
-        ps.append("$form.MinimumSize = New-Object System.Drawing.Size(700,300)\n");
-        ps.append("$form.TopMost = $true\n\n");
+        WinFormsScript.form(ps, "form", "ParseBot Events (" + events.size() + " entries)",
+                900, 500, false, true);
+        ps.append("$form.MinimumSize = New-Object System.Drawing.Size(700,300)\n\n");
 
-        // DataGridView
-        ps.append("$dgv = New-Object System.Windows.Forms.DataGridView\n");
-        ps.append("$dgv.Location = New-Object System.Drawing.Point(10,10)\n");
-        ps.append("$dgv.Size = New-Object System.Drawing.Size(875,440)\n");
-        ps.append("$dgv.Anchor = 'Top,Bottom,Left,Right'\n");
-        ps.append("$dgv.AllowUserToAddRows = $false\n");
-        ps.append("$dgv.AllowUserToDeleteRows = $false\n");
-        ps.append("$dgv.ReadOnly = $true\n");
-        ps.append("$dgv.AutoSizeColumnsMode = 'Fill'\n");
-        ps.append("$dgv.SelectionMode = 'FullRowSelect'\n");
-        ps.append("$dgv.RowHeadersVisible = $false\n\n");
-
-        // Columns
-        ps.append("$dgv.Columns.Add('Timestamp', 'Timestamp') | Out-Null\n");
-        ps.append("$dgv.Columns.Add('Type', 'Type') | Out-Null\n");
-        ps.append("$dgv.Columns.Add('Severity', 'Severity') | Out-Null\n");
-        ps.append("$dgv.Columns.Add('Message', 'Message') | Out-Null\n");
-        ps.append("$dgv.Columns.Add('Details', 'Details') | Out-Null\n\n");
-
-        // Column widths
-        ps.append("$dgv.Columns['Timestamp'].FillWeight = 15\n");
-        ps.append("$dgv.Columns['Type'].FillWeight = 15\n");
-        ps.append("$dgv.Columns['Severity'].FillWeight = 10\n");
-        ps.append("$dgv.Columns['Message'].FillWeight = 30\n");
-        ps.append("$dgv.Columns['Details'].FillWeight = 30\n\n");
+        WinFormsScript.dataGridView(ps, "dgv", "form", 10, 10, 875, 440,
+                List.of("Timestamp", "Type", "Severity", "Message", "Details"),
+                List.of(15, 15, 10, 30, 30));
+        ps.append("$dgv.Anchor = 'Top,Bottom,Left,Right'\n\n");
 
         // Add rows (newest first)
         for (int i = events.size() - 1; i >= 0; i--) {
@@ -108,14 +66,8 @@ final class PowerShellEventsUi implements EventsUi {
             }
         }
 
-        ps.append("\n$form.Controls.Add($dgv)\n");
-
-        // Status bar with log directory
-        ps.append(String.format(
-                "$status = New-Object System.Windows.Forms.StatusBar; " +
-                "$status.Text = 'Logs: %s'; " +
-                "$form.Controls.Add($status)\n",
-                PowerShellRunner.escapeSingleLine(logDir.toString())));
+        ps.append('\n');
+        WinFormsScript.statusBar(ps, "status", "form", "Logs: " + logDir);
 
         ps.append("\n[void]$form.ShowDialog()\n");
 

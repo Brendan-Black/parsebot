@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import black.parsebot.ps.PowerShellRunner;
+import black.parsebot.ps.WinFormsScript;
 
 import static black.parsebot.installer.InstallerConfig.*;
 
@@ -21,34 +22,14 @@ final class PowerShellInstallerUi implements InstallerUi {
             resultFile.toFile().deleteOnExit();
             String resultPath = resultFile.toString().replace("\\", "\\\\");
 
-            String ps = PowerShellRunner.WINFORMS_PREAMBLE + """
+            StringBuilder ps = new StringBuilder();
+            ps.append(PowerShellRunner.WINFORMS_PREAMBLE).append('\n');
+            WinFormsScript.form(ps, "form", "ParseBot Installer", 320, 130, true, true);
+            WinFormsScript.label(ps, "lbl", "form", 10, 15, 300, 20, "What would you like to do?");
+            WinFormsScript.button(ps, "btnInstall", "form", 20, 50, 130, 40, "Install", null);
+            WinFormsScript.button(ps, "btnUninstall", "form", 170, 50, 130, 40, "Uninstall", null);
 
-                    $form = New-Object System.Windows.Forms.Form
-                    $form.Text = 'ParseBot Installer'
-                    $form.StartPosition = 'CenterScreen'
-                    $form.FormBorderStyle = 'FixedDialog'
-                    $form.MaximizeBox = $false
-                    $form.ClientSize = New-Object System.Drawing.Size(320,130)
-                    $form.TopMost = $true
-
-                    $lbl = New-Object System.Windows.Forms.Label
-                    $lbl.Location = New-Object System.Drawing.Point(10,15)
-                    $lbl.Size = New-Object System.Drawing.Size(300,20)
-                    $lbl.Text = 'What would you like to do?'
-                    $form.Controls.Add($lbl)
-
-                    $btnInstall = New-Object System.Windows.Forms.Button
-                    $btnInstall.Location = New-Object System.Drawing.Point(20,50)
-                    $btnInstall.Size = New-Object System.Drawing.Size(130,40)
-                    $btnInstall.Text = 'Install'
-                    $form.Controls.Add($btnInstall)
-
-                    $btnUninstall = New-Object System.Windows.Forms.Button
-                    $btnUninstall.Location = New-Object System.Drawing.Point(170,50)
-                    $btnUninstall.Size = New-Object System.Drawing.Size(130,40)
-                    $btnUninstall.Text = 'Uninstall'
-                    $form.Controls.Add($btnUninstall)
-
+            ps.append("""
                     $btnInstall.Add_Click({
                         Set-Content -Path '%s' -Value 'install'
                         $form.Close()
@@ -65,9 +46,9 @@ final class PowerShellInstallerUi implements InstallerUi {
                     })
 
                     [void]$form.ShowDialog()
-                    """.formatted(resultPath, resultPath, resultPath, resultPath, resultPath);
+                    """.formatted(resultPath, resultPath, resultPath, resultPath, resultPath));
 
-            PowerShellRunner.run(ps, "parsebot-launcher-");
+            PowerShellRunner.run(ps.toString(), "parsebot-launcher-");
 
             List<String> lines = Files.readAllLines(resultFile);
             if (lines.isEmpty() || "CANCELLED".equals(lines.getFirst())) {
@@ -168,12 +149,8 @@ final class PowerShellInstallerUi implements InstallerUi {
     // --- Form structure ---
 
     private static void appendFormSetup(StringBuilder ps) {
-        ps.append("$form = New-Object System.Windows.Forms.Form\n");
-        ps.append("$form.Text = 'ParseBot Service Configuration'\n");
-        ps.append("$form.StartPosition = 'CenterScreen'\n");
-        ps.append("$form.FormBorderStyle = 'FixedDialog'\n");
-        ps.append("$form.MaximizeBox = $false\n");
-        ps.append("$form.ClientSize = New-Object System.Drawing.Size(560,400)\n\n");
+        WinFormsScript.form(ps, "form", "ParseBot Service Configuration", 560, 400, true, false);
+        ps.append('\n');
 
         ps.append("$tabs = New-Object System.Windows.Forms.TabControl\n");
         ps.append("$tabs.Location = New-Object System.Drawing.Point(10,10)\n");
@@ -191,20 +168,11 @@ final class PowerShellInstallerUi implements InstallerUi {
     }
 
     private static void appendFormButtons(StringBuilder ps) {
-        ps.append("\n$btnOk = New-Object System.Windows.Forms.Button; " +
-                "$btnOk.Location = New-Object System.Drawing.Point(360,358); " +
-                "$btnOk.Size = New-Object System.Drawing.Size(80,30); " +
-                "$btnOk.Text = 'Install'; " +
-                "$btnOk.DialogResult = [System.Windows.Forms.DialogResult]::OK; " +
-                "$form.AcceptButton = $btnOk; " +
-                "$form.Controls.Add($btnOk)\n");
-        ps.append("$btnCancel = New-Object System.Windows.Forms.Button; " +
-                "$btnCancel.Location = New-Object System.Drawing.Point(455,358); " +
-                "$btnCancel.Size = New-Object System.Drawing.Size(80,30); " +
-                "$btnCancel.Text = 'Cancel'; " +
-                "$btnCancel.DialogResult = [System.Windows.Forms.DialogResult]::Cancel; " +
-                "$form.CancelButton = $btnCancel; " +
-                "$form.Controls.Add($btnCancel)\n");
+        ps.append('\n');
+        WinFormsScript.button(ps, "btnOk", "form", 360, 358, 80, 30, "Install", "OK");
+        ps.append("$form.AcceptButton = $btnOk\n");
+        WinFormsScript.button(ps, "btnCancel", "form", 455, 358, 80, 30, "Cancel", "Cancel");
+        ps.append("$form.CancelButton = $btnCancel\n");
     }
 
     // --- Field controls ---
@@ -341,28 +309,16 @@ final class PowerShellInstallerUi implements InstallerUi {
                 "$tab%d.Controls.Add($hintPanel%d)\n",
                 s, s, y, s, s, s, s, s, s));
 
-        ps.append(String.format(
-                "$hintGrid%d = New-Object System.Windows.Forms.DataGridView; " +
-                "$hintGrid%d.Location = New-Object System.Drawing.Point(0,0); " +
-                "$hintGrid%d.Size = New-Object System.Drawing.Size(493,228); " +
-                "$hintGrid%d.Anchor = 'Top,Bottom,Left,Right'; " +
-                "$hintGrid%d.ReadOnly = $true; " +
-                "$hintGrid%d.AllowUserToAddRows = $false; " +
-                "$hintGrid%d.AllowUserToDeleteRows = $false; " +
-                "$hintGrid%d.AllowUserToResizeRows = $false; " +
-                "$hintGrid%d.RowHeadersVisible = $false; " +
-                "$hintGrid%d.SelectionMode = 'FullRowSelect'; " +
-                "$hintGrid%d.BackgroundColor = [System.Drawing.Color]::FromArgb(245,245,250); " +
-                "$hintGrid%d.BorderStyle = 'None'; " +
-                "$hintGrid%d.AutoSizeColumnsMode = 'Fill'; " +
-                "$hintGrid%d.ColumnHeadersDefaultCellStyle.BackColor = [System.Drawing.Color]::FromArgb(230,230,235); " +
-                "$hintGrid%d.EnableHeadersVisualStyles = $false; " +
-                "$hintGrid%d.Columns.Add('Gateway', 'Gateway Address') | Out-Null; " +
-                "$hintGrid%d.Columns.Add('Carrier', 'Carrier') | Out-Null; " +
-                "$hintGrid%d.Columns['Gateway'].FillWeight = 55; " +
-                "$hintGrid%d.Columns['Carrier'].FillWeight = 45; " +
-                "$hintPanel%d.Controls.Add($hintGrid%d)\n",
-                s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s, s));
+        String gridName = "hintGrid" + s;
+        WinFormsScript.dataGridView(ps, gridName, "hintPanel" + s, 0, 0, 493, 228,
+                List.of("Gateway", "Carrier"), List.of(55, 45));
+        String g = "$" + gridName;
+        ps.append(g).append(".Anchor = 'Top,Bottom,Left,Right'\n");
+        ps.append(g).append(".AllowUserToResizeRows = $false\n");
+        ps.append(g).append(".BackgroundColor = [System.Drawing.Color]::FromArgb(245,245,250)\n");
+        ps.append(g).append(".BorderStyle = 'None'\n");
+        ps.append(g).append(".ColumnHeadersDefaultCellStyle.BackColor = [System.Drawing.Color]::FromArgb(230,230,235)\n");
+        ps.append(g).append(".EnableHeadersVisualStyles = $false\n");
 
         for (String[] row : SMS_CARRIERS) {
             ps.append(String.format("$hintGrid%d.Rows.Add('%s', '%s') | Out-Null\n", s, row[0], row[1]));
