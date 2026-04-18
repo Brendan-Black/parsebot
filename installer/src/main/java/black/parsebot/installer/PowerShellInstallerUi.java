@@ -12,9 +12,10 @@ import black.parsebot.ps.PowerShellRunner;
 
 import static black.parsebot.installer.InstallerConfig.*;
 
-final class PowerShellGui {
+final class PowerShellInstallerUi implements InstallerUi {
 
-    static String showLauncherDialog() {
+    @Override
+    public String showLauncherDialog() {
         try {
             Path resultFile = Files.createTempFile("parsebot-launcher-", ".txt");
             resultFile.toFile().deleteOnExit();
@@ -80,7 +81,8 @@ final class PowerShellGui {
         }
     }
 
-    static Map<String, String> showConfigDialog(Map<String, String> existing) {
+    @Override
+    public Map<String, String> showConfigDialog(Map<String, String> existing) {
         StringBuilder ps = new StringBuilder();
         ps.append(PowerShellRunner.WINFORMS_PREAMBLE).append('\n');
 
@@ -426,5 +428,4 @@ final class PowerShellGui {
         return value;
     }
 
-    private PowerShellGui() {}
 }

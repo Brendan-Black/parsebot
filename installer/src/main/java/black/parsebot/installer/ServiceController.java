@@ -15,6 +15,12 @@ import static black.parsebot.installer.InstallerConfig.*;
 
 final class ServiceController {
 
+    private final InstallerUi ui;
+
+    ServiceController(InstallerUi ui) {
+        this.ui = ui;
+    }
+
     void install(Path exePath, boolean dryRun) {
         if (!dryRun && !Files.isRegularFile(exePath)) {
             System.err.println("Service executable not found: " + exePath);
@@ -22,7 +28,7 @@ final class ServiceController {
         }
 
         Map<String, String> existing = loadExistingConfig();
-        Map<String, String> values = PowerShellGui.showConfigDialog(existing);
+        Map<String, String> values = ui.showConfigDialog(existing);
         if (values == null) {
             System.out.println("Installation cancelled.");
             System.exit(0);

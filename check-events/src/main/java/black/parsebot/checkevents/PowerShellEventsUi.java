@@ -11,14 +11,12 @@ import black.parsebot.event.Event;
 import black.parsebot.event.EventSeverity;
 import black.parsebot.ps.PowerShellRunner;
 
-final class EventsGui {
+final class PowerShellEventsUi implements EventsUi {
 
-    private static final DateTimeFormatter DISPLAY_FORMAT =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter DISPLAY_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
 
-    private EventsGui() {}
-
-    static void showEmpty(Path logDir) {
+    @Override
+    public void showEmpty(Path logDir) {
         String ps = PowerShellRunner.WINFORMS_PREAMBLE + """
 
                 $form = New-Object System.Windows.Forms.Form
@@ -49,7 +47,8 @@ final class EventsGui {
         runPowerShell(ps);
     }
 
-    static void showEvents(List<Event> events, Path logDir) {
+    @Override
+    public void showEvents(List<Event> events, Path logDir) {
         StringBuilder ps = new StringBuilder();
         ps.append(PowerShellRunner.WINFORMS_PREAMBLE).append('\n');
 

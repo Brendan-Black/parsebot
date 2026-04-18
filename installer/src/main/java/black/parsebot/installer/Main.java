@@ -10,20 +10,22 @@ public class Main {
         boolean dryRun = argList.contains("--dry-run");
         Path exePath = ServiceController.resolveExePath(args);
 
+        InstallerUi ui = new PowerShellInstallerUi();
+
         String command = argList.stream()
                 .filter(a -> !a.startsWith("--"))
                 .findFirst()
                 .orElse(null);
 
         if (command == null) {
-            command = PowerShellGui.showLauncherDialog();
+            command = ui.showLauncherDialog();
             if (command == null) {
                 System.out.println("Cancelled.");
                 System.exit(0);
             }
         }
 
-        ServiceController controller = new ServiceController();
+        ServiceController controller = new ServiceController(ui);
         switch (command) {
             case "install" -> controller.install(exePath, dryRun);
             case "uninstall" -> controller.uninstall();

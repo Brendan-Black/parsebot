@@ -27,10 +27,11 @@ public class Main {
             return;
         }
 
+        EventsUi ui = new PowerShellEventsUi();
         if (events.isEmpty()) {
-            EventsGui.showEmpty(logDir);
+            ui.showEmpty(logDir);
         } else {
-            EventsGui.showEvents(events, logDir);
+            ui.showEvents(events, logDir);
         }
     }
 
