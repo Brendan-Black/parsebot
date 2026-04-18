@@ -1,10 +1,12 @@
 package black.parsebot.model.raw;
 
+import jakarta.mail.Address;
 import jakarta.mail.BodyPart;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
 import jakarta.mail.Multipart;
 import jakarta.mail.Part;
+import jakarta.mail.internet.InternetAddress;
 
 import java.io.IOException;
 import java.util.AbstractMap;
@@ -24,6 +26,21 @@ public final class RawMailboxData extends RawData {
 
     public Message getSourceMessage() {
         return sourceMessage;
+    }
+
+    /**
+     * Returns the sender's email address, or an empty string if unavailable.
+     */
+    public String getSenderEmail() {
+        try {
+            Address[] from = sourceMessage.getFrom();
+            if (from != null && from.length > 0 && from[0] instanceof InternetAddress ia) {
+                return ia.getAddress().toLowerCase();
+            }
+        } catch (MessagingException e) {
+            // fall through
+        }
+        return "";
     }
 
     /**

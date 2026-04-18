@@ -17,13 +17,11 @@ public class AppConfig {
 	private final Properties props;
 	private final SftpConfig sftpConfig;
 	private final MailConfig mailConfig;
-	private final FileSystemConfig fileSystemConfig;
 
 	private AppConfig(Properties props) {
 		this.props = props;
 		this.sftpConfig = new SftpConfig(props);
 		this.mailConfig = new MailConfig(props);
-		this.fileSystemConfig = new FileSystemConfig(props);
 	}
 
 	public static AppConfig load() {
@@ -75,10 +73,6 @@ public class AppConfig {
 		return mailConfig;
 	}
 
-	public FileSystemConfig getFileSystemConfig() {
-		return fileSystemConfig;
-	}
-
 	public String getClaudeApiKey() {
 		return props.getProperty("claude.api.key", "");
 	}
@@ -89,6 +83,14 @@ public class AppConfig {
 
 	public String getProductCsvPath() {
 		return props.getProperty("csv.products", "products.csv");
+	}
+
+	public String getCustomRulesDir() {
+		return props.getProperty("custom.rules.dir", "custom_rules");
+	}
+
+	public String getCustomProductListsDir() {
+		return props.getProperty("custom.productlists.dir", "custom_productlists");
 	}
 
 	public static class SftpConfig {
@@ -169,20 +171,4 @@ public class AppConfig {
 		}
 	}
 
-	public static class FileSystemConfig {
-
-		private final Properties props;
-
-		private FileSystemConfig(Properties props) {
-			this.props = props;
-		}
-
-		public String getCenter() {
-			return props.getProperty("input.directory", "./input");
-		}
-
-		public String getFilePattern() {
-			return props.getProperty("input.file.pattern", "*.txt");
-		}
-	}
 }

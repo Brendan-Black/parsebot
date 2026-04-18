@@ -25,7 +25,22 @@ public class DataParser {
 		this.productCsv = productCsv;
 	}
 
+	/**
+	 * Parses the email using default rules and product list.
+	 */
 	public List<TransformedData> parse(RawMailboxData raw) throws IOException, InterruptedException {
+		return parse(raw, null, null);
+	}
+
+	/**
+	 * Parses the email, using custom overrides if provided.
+	 *
+	 * @param raw              the raw email data
+	 * @param customRules      custom system prompt, or null to use default
+	 * @param customProductCsv custom product list CSV, or null to use default
+	 */
+	public List<TransformedData> parse(RawMailboxData raw, String customRules, String customProductCsv)
+			throws IOException, InterruptedException {
 		log.info("Parsing: {} (source: {})", raw.getName(), raw.getClass().getSimpleName());
 
 		List<Map.Entry<String, byte[]>> pdfs;
@@ -40,6 +55,9 @@ public class DataParser {
 			return List.of();
 		}
 
+		String effectiveProductCsv = (customProductCsv != null && !customProductCsv.isBlank())
+				? customProductCsv : productCsv;
+
 		List<TransformedData> results = new ArrayList<>();
 
 		for (Map.Entry<String, byte[]> pdf : pdfs) {
@@ -47,7 +65,8 @@ public class DataParser {
 			byte[] pdfBytes = pdf.getValue();
 
 			log.info("Sending PDF attachment '{}' to Claude", pdfName);
-			String responseJson = claudeClient.parsePdf(pdfName, pdfBytes, customerCsv, productCsv);
+			String responseJson = claudeClient.parsePdf(pdfName, pdfBytes, customerCsv, effectiveProductCsv,
+					customRules);
 
 			String outputFilename = sanitizeFilename(pdfName) + ".json";
 			results.add(new TransformedData(outputFilename, responseJson.getBytes(StandardCharsets.UTF_8)));

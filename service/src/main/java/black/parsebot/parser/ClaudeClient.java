@@ -121,9 +121,26 @@ public class ClaudeClient {
 	 */
 	public String parsePdf(String filename, byte[] pdfBytes, String customerCsv, String productCsv)
 			throws IOException, InterruptedException {
+		return parsePdf(filename, pdfBytes, customerCsv, productCsv, null);
+	}
+
+	/**
+	 * Sends a PDF order document to Claude for parsing, with an optional custom system prompt.
+	 *
+	 * @param filename       the name of the PDF file
+	 * @param pdfBytes       the raw PDF bytes
+	 * @param customerCsv    the full customer list as CSV text
+	 * @param productCsv     the full product catalog as CSV text
+	 * @param customRules    custom system prompt to use instead of the default, or null for default
+	 * @return the raw JSON response body from the Messages API
+	 */
+	public String parsePdf(String filename, byte[] pdfBytes, String customerCsv, String productCsv,
+						   String customRules)
+			throws IOException, InterruptedException {
 		String base64Content = Base64.getEncoder().encodeToString(pdfBytes);
 
-		String requestBody = buildRequestBody(filename, base64Content, customerCsv, productCsv);
+		String systemPrompt = (customRules != null && !customRules.isBlank()) ? customRules : SYSTEM_PROMPT;
+		String requestBody = buildRequestBody(filename, base64Content, customerCsv, productCsv, systemPrompt);
 
 		HttpRequest request = HttpRequest.newBuilder()
 				.uri(URI.create(API_URL))
@@ -146,7 +163,8 @@ public class ClaudeClient {
 		return response.body();
 	}
 
-	private String buildRequestBody(String filename, String base64Pdf, String customerCsv, String productCsv) {
+	private String buildRequestBody(String filename, String base64Pdf, String customerCsv, String productCsv,
+									String systemPrompt) {
 		String safeFilename = jsonEscape(filename);
 		String safeCustomerCsv = jsonEscape(customerCsv);
 		String safeProductCsv = jsonEscape(productCsv);
@@ -178,7 +196,7 @@ public class ClaudeClient {
 							}
 					]
 			}
-			""".formatted(MODEL, jsonString(SYSTEM_PROMPT), TOOLS, base64Pdf,
+			""".formatted(MODEL, jsonString(systemPrompt), TOOLS, base64Pdf,
 				safeFilename, safeCustomerCsv, safeProductCsv);
 	}
 

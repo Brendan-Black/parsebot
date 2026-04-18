@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class Main {
 
@@ -15,30 +16,42 @@ public class Main {
     private static final String DESCRIPTION = "ParseBot email parsing service";
     private static final String SERVICE_EXE = "service.exe";
 
-    /** Property key → [label, default value] */
-    private static final LinkedHashMap<String, String[]> FIELDS = new LinkedHashMap<>();
-    static {
-        FIELDS.put("poll.interval.seconds", new String[]{"Poll Interval (seconds)", "60"});
-        FIELDS.put("input.directory",       new String[]{"Input Directory", "./input"});
-        FIELDS.put("input.file.pattern",    new String[]{"Input File Pattern", "*.txt"});
-        FIELDS.put("mail.host",             new String[]{"Mail Host", ""});
-        FIELDS.put("mail.port",             new String[]{"Mail Port", "993"});
-        FIELDS.put("mail.username",         new String[]{"Mail Username", ""});
-        FIELDS.put("mail.password",         new String[]{"Mail Password", ""});
-        FIELDS.put("mail.folder",           new String[]{"Mail Folder", "INBOX"});
-        FIELDS.put("mail.folder.success",   new String[]{"Mail Success Folder", "Processed"});
-        FIELDS.put("mail.folder.failed",    new String[]{"Mail Failed Folder", "Failed"});
-        FIELDS.put("mail.protocol",         new String[]{"Mail Protocol", "imaps"});
-        FIELDS.put("claude.api.key",        new String[]{"Claude API Key", ""});
-        FIELDS.put("csv.customers",         new String[]{"Customers CSV Path", ""});
-        FIELDS.put("csv.products",          new String[]{"Products CSV Path", ""});
-        FIELDS.put("sftp.host",             new String[]{"SFTP Host", ""});
-        FIELDS.put("sftp.port",             new String[]{"SFTP Port", "22"});
-        FIELDS.put("sftp.username",         new String[]{"SFTP Username", ""});
-        FIELDS.put("sftp.password",         new String[]{"SFTP Password", ""});
-        FIELDS.put("sftp.private.key",      new String[]{"SFTP Private Key Path", ""});
-        FIELDS.put("sftp.remote.directory", new String[]{"SFTP Remote Directory", "/upload"});
-    }
+    private record Field(String key, String label, String defaultValue) {}
+
+    private record Section(String title, List<Field> fields) {}
+
+    private static final List<Section> SECTIONS = List.of(
+            new Section("General", List.of(
+                    new Field("poll.interval.seconds", "Poll Interval (seconds)", "60")
+            )),
+            new Section("Mail (IMAP)", List.of(
+                    new Field("mail.host",           "Host",           ""),
+                    new Field("mail.port",           "Port",           "993"),
+                    new Field("mail.username",       "Username",       ""),
+                    new Field("mail.password",       "Password",       ""),
+                    new Field("mail.folder",         "Folder",         "INBOX"),
+                    new Field("mail.folder.success", "Success Folder", "Processed"),
+                    new Field("mail.folder.failed",  "Failed Folder",  "Failed"),
+                    new Field("mail.protocol",       "Protocol",       "imaps")
+            )),
+            new Section("Claude API", List.of(
+                    new Field("claude.api.key", "API Key", "")
+            )),
+            new Section("Reference Data", List.of(
+                    new Field("csv.customers",         "Customers CSV Path",              ""),
+                    new Field("csv.products",          "Products CSV Path",               ""),
+                    new Field("custom.rules.dir",      "Custom Rules Directory",          "custom_rules"),
+                    new Field("custom.productlists.dir", "Custom Product Lists Directory", "custom_productlists")
+            )),
+            new Section("SFTP Output", List.of(
+                    new Field("sftp.host",             "Host",             ""),
+                    new Field("sftp.port",             "Port",             "22"),
+                    new Field("sftp.username",         "Username",         ""),
+                    new Field("sftp.password",         "Password",         ""),
+                    new Field("sftp.private.key",      "Private Key Path", ""),
+                    new Field("sftp.remote.directory", "Remote Directory", "/upload")
+            ))
+    );
 
     public static void main(String[] args) {
         List<String> argList = List.of(args);
@@ -237,36 +250,92 @@ public class Main {
         ps.append("$form.MaximizeBox = $false\n");
         ps.append("$form.AutoScroll = $true\n");
 
+        Set<String> folderFields = Set.of("custom.rules.dir", "custom.productlists.dir");
+        Set<String> fileFields = Set.of("csv.customers", "csv.products", "sftp.private.key");
+
         int y = 10;
         int fieldIndex = 0;
-        List<String> keys = new ArrayList<>(FIELDS.keySet());
+        int sectionIndex = 0;
+        List<String> keys = new ArrayList<>();
 
-        for (var entry : FIELDS.entrySet()) {
-            String label = entry.getValue()[0];
-            String defaultVal = entry.getValue()[1];
-            boolean isPassword = entry.getKey().contains("password") || entry.getKey().contains("api.key");
-
+        for (Section section : SECTIONS) {
+            // Section header
             ps.append(String.format(
-                    "$lbl%d = New-Object System.Windows.Forms.Label; " +
-                    "$lbl%d.Location = New-Object System.Drawing.Point(10,%d); " +
-                    "$lbl%d.Size = New-Object System.Drawing.Size(200,20); " +
-                    "$lbl%d.Text = '%s'; " +
-                    "$form.Controls.Add($lbl%d)\n",
-                    fieldIndex, fieldIndex, y, fieldIndex, fieldIndex, label, fieldIndex));
+                    "$sec%d = New-Object System.Windows.Forms.Label; " +
+                    "$sec%d.Location = New-Object System.Drawing.Point(10,%d); " +
+                    "$sec%d.Size = New-Object System.Drawing.Size(510,22); " +
+                    "$sec%d.Text = '%s'; " +
+                    "$sec%d.Font = New-Object System.Drawing.Font('Microsoft Sans Serif',9,[System.Drawing.FontStyle]::Bold); " +
+                    "$sec%d.BorderStyle = [System.Windows.Forms.BorderStyle]::Fixed3D; " +
+                    "$form.Controls.Add($sec%d)\n",
+                    sectionIndex, sectionIndex, y, sectionIndex, sectionIndex,
+                    section.title(), sectionIndex, sectionIndex, sectionIndex));
+            y += 28;
+            sectionIndex++;
 
-            ps.append(String.format(
-                    "$txt%d = New-Object System.Windows.Forms.TextBox; " +
-                    "$txt%d.Location = New-Object System.Drawing.Point(220,%d); " +
-                    "$txt%d.Size = New-Object System.Drawing.Size(300,20); " +
-                    "$txt%d.Text = '%s'",
-                    fieldIndex, fieldIndex, y, fieldIndex, fieldIndex, defaultVal));
-            if (isPassword) {
-                ps.append(String.format("; $txt%d.UseSystemPasswordChar = $true", fieldIndex));
+            for (Field field : section.fields()) {
+                String key = field.key();
+                String label = field.label();
+                String defaultVal = field.defaultValue();
+                boolean isPassword = key.contains("password") || key.contains("api.key");
+                boolean hasBrowse = folderFields.contains(key) || fileFields.contains(key);
+                keys.add(key);
+
+                ps.append(String.format(
+                        "$lbl%d = New-Object System.Windows.Forms.Label; " +
+                        "$lbl%d.Location = New-Object System.Drawing.Point(20,%d); " +
+                        "$lbl%d.Size = New-Object System.Drawing.Size(190,20); " +
+                        "$lbl%d.Text = '%s'; " +
+                        "$form.Controls.Add($lbl%d)\n",
+                        fieldIndex, fieldIndex, y, fieldIndex, fieldIndex, label, fieldIndex));
+
+                int textBoxWidth = hasBrowse ? 230 : 300;
+                ps.append(String.format(
+                        "$txt%d = New-Object System.Windows.Forms.TextBox; " +
+                        "$txt%d.Location = New-Object System.Drawing.Point(220,%d); " +
+                        "$txt%d.Size = New-Object System.Drawing.Size(%d,20); " +
+                        "$txt%d.Text = '%s'",
+                        fieldIndex, fieldIndex, y, fieldIndex, textBoxWidth, fieldIndex, defaultVal));
+                if (isPassword) {
+                    ps.append(String.format("; $txt%d.UseSystemPasswordChar = $true", fieldIndex));
+                }
+                ps.append(String.format("; $form.Controls.Add($txt%d)\n", fieldIndex));
+
+                if (hasBrowse) {
+                    ps.append(String.format(
+                            "$btn%d = New-Object System.Windows.Forms.Button; " +
+                            "$btn%d.Location = New-Object System.Drawing.Point(455,%d); " +
+                            "$btn%d.Size = New-Object System.Drawing.Size(65,22); " +
+                            "$btn%d.Text = 'Browse'; " +
+                            "$form.Controls.Add($btn%d)\n",
+                            fieldIndex, fieldIndex, y, fieldIndex, fieldIndex, fieldIndex));
+
+                    if (folderFields.contains(key)) {
+                        ps.append(String.format(
+                                "$btn%d.Add_Click({ " +
+                                "$dlg = New-Object System.Windows.Forms.FolderBrowserDialog; " +
+                                "$dlg.Description = '%s'; " +
+                                "$dlg.ShowNewFolderButton = $true; " +
+                                "if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { " +
+                                "$txt%d.Text = $dlg.SelectedPath } })\n",
+                                fieldIndex, label, fieldIndex));
+                    } else {
+                        ps.append(String.format(
+                                "$btn%d.Add_Click({ " +
+                                "$dlg = New-Object System.Windows.Forms.OpenFileDialog; " +
+                                "$dlg.Title = '%s'; " +
+                                "$dlg.Filter = 'All Files (*.*)|*.*'; " +
+                                "if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { " +
+                                "$txt%d.Text = $dlg.FileName } })\n",
+                                fieldIndex, label, fieldIndex));
+                    }
+                }
+
+                y += 30;
+                fieldIndex++;
             }
-            ps.append(String.format("; $form.Controls.Add($txt%d)\n", fieldIndex));
 
-            y += 30;
-            fieldIndex++;
+            y += 10; // spacing between sections
         }
 
         // Buttons

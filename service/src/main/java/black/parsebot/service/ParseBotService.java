@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import black.parsebot.config.AppConfig;
+import black.parsebot.config.CustomOverrideResolver;
 import black.parsebot.model.TransformedData;
 import black.parsebot.model.raw.RawMailboxData;
 import black.parsebot.parser.ClaudeClient;
@@ -29,6 +30,7 @@ public class ParseBotService {
 	private final AppConfig.MailConfig mailConfig;
 	private final Path customerCsvPath;
 	private final Path productCsvPath;
+	private final CustomOverrideResolver overrideResolver;
 
 	public ParseBotService(AppConfig config) throws IOException {
 		this.mailConfig = config.getMailConfig();
@@ -38,6 +40,8 @@ public class ParseBotService {
 		this.claudeClient = new ClaudeClient(config.getClaudeApiKey());
 		this.customerCsvPath = Path.of(config.getCustomerCsvPath());
 		this.productCsvPath = Path.of(config.getProductCsvPath());
+		this.overrideResolver = new CustomOverrideResolver(
+				config.getCustomRulesDir(), config.getCustomProductListsDir());
 
 		this.sftpWriter = new SftpWriter(config.getSftpConfig());
 	}
@@ -65,7 +69,15 @@ public class ParseBotService {
 
 			for (RawMailboxData email : rawData) {
 				try {
-					List<TransformedData> transformed = parser.parse(email);
+					String sender = email.getSenderEmail();
+					String customRules = overrideResolver.resolveRules(sender);
+					String customProductList = overrideResolver.resolveProductList(sender);
+
+					if (customRules != null || customProductList != null) {
+						log.info("Using custom overrides for sender '{}'", sender);
+					}
+
+					List<TransformedData> transformed = parser.parse(email, customRules, customProductList);
 					if (!transformed.isEmpty()) {
 						sftpWriter.write(transformed);
 					}
