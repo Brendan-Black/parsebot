@@ -55,8 +55,7 @@ public class ParseBotService {
 		this.overrideResolver = new CustomOverrideResolver(refData.getCustomRulesDir(), refData.getCustomProductListsDir());
 
 		this.sftpWriter = new SftpWriter(config.getSftpConfig());
-		this.failureDetector = new ConsecutiveFailureDetector(
-				config.getEventsConfig().getConsecutiveFailureThreshold(), eventBus);
+		this.failureDetector = new ConsecutiveFailureDetector(config.getEventsConfig().getConsecutiveFailureThreshold(), eventBus);
 	}
 
 	public AtomicInteger getTotalSuccessCount() {

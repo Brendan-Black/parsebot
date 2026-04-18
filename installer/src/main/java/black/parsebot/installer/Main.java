@@ -63,8 +63,6 @@ public class Main {
             )),
             new Section("Notifications - Email (SMTP)", List.of(
                     new Field("notify.smtp.enabled",  "Enabled (true/false)", "false"),
-                    new Field("notify.smtp.host",     "SMTP Host",            ""),
-                    new Field("notify.smtp.port",     "SMTP Port",            "587"),
                     new Field("notify.smtp.to",       "To Addresses",         ""),
                     new Field("notify.smtp.to.urgent", "Urgent To Addresses", ""),
                     new Field("notify.smtp.starttls", "STARTTLS (true/false)","true")

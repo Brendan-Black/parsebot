@@ -266,7 +266,8 @@ public class AppConfig {
 		}
 
 		public String getSmtpHost() {
-			return props.getProperty("notify.smtp.host", "");
+			String host = props.getProperty("notify.smtp.host", "");
+			return host.isEmpty() ? props.getProperty("mail.host", "") : host;
 		}
 
 		public int getSmtpPort() {
