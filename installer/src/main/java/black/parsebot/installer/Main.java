@@ -40,6 +40,7 @@ public class Main {
             new Section("Reference Data", List.of(
                     new Field("csv.customers",         "Customers CSV Path",              ""),
                     new Field("csv.products",          "Products CSV Path",               ""),
+                    new Field("csv.pricematrix",       "Price Matrix CSV Path",           ""),
                     new Field("custom.rules.dir",      "Custom Rules Directory",          "custom_rules"),
                     new Field("custom.productlists.dir", "Custom Product Lists Directory", "custom_productlists")
             )),
@@ -251,7 +252,7 @@ public class Main {
         ps.append("$form.AutoScroll = $true\n");
 
         Set<String> folderFields = Set.of("custom.rules.dir", "custom.productlists.dir");
-        Set<String> fileFields = Set.of("csv.customers", "csv.products", "sftp.private.key");
+        Set<String> fileFields = Set.of("csv.customers", "csv.products", "csv.pricematrix", "sftp.private.key");
 
         int y = 10;
         int fieldIndex = 0;

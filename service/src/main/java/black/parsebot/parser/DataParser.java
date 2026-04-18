@@ -18,11 +18,17 @@ public class DataParser {
 	private final ClaudeClient claudeClient;
 	private final String customerCsv;
 	private final String productCsv;
+	private final PriceMatrix priceMatrix;
 
 	public DataParser(ClaudeClient claudeClient, String customerCsv, String productCsv) {
+		this(claudeClient, customerCsv, productCsv, null);
+	}
+
+	public DataParser(ClaudeClient claudeClient, String customerCsv, String productCsv, PriceMatrix priceMatrix) {
 		this.claudeClient = claudeClient;
 		this.customerCsv = customerCsv;
 		this.productCsv = productCsv;
+		this.priceMatrix = priceMatrix;
 	}
 
 	/**
@@ -39,8 +45,7 @@ public class DataParser {
 	 * @param customRules      custom system prompt, or null to use default
 	 * @param customProductCsv custom product list CSV, or null to use default
 	 */
-	public List<TransformedData> parse(RawMailboxData raw, String customRules, String customProductCsv)
-			throws IOException, InterruptedException {
+	public List<TransformedData> parse(RawMailboxData raw, String customRules, String customProductCsv)	throws IOException, InterruptedException {
 		log.info("Parsing: {} (source: {})", raw.getName(), raw.getClass().getSimpleName());
 
 		List<Map.Entry<String, byte[]>> pdfs;
@@ -67,6 +72,10 @@ public class DataParser {
 
 			log.info("Sending PDF attachment '{}' to Claude", pdfName);
 			String responseJson = claudeClient.parsePdf(pdfName, pdfBytes, customerCsv, effectiveProductCsv,customRules);
+
+			if (priceMatrix != null) {
+				responseJson = priceMatrix.applyToResponse(responseJson);
+			}
 
 			String outputFilename = sanitizeFilename(pdfName) + ".json";
 			results.add(new TransformedData(outputFilename, responseJson.getBytes(StandardCharsets.UTF_8)));

@@ -15,6 +15,7 @@ import black.parsebot.model.TransformedData;
 import black.parsebot.model.raw.RawMailboxData;
 import black.parsebot.parser.ClaudeClient;
 import black.parsebot.parser.DataParser;
+import black.parsebot.parser.PriceMatrix;
 import black.parsebot.reader.MailboxReader;
 import black.parsebot.writer.MailboxWriter;
 import black.parsebot.writer.SftpWriter;
@@ -31,8 +32,10 @@ public class ParseBotService {
 	private final Path customerCsvPath;
 	private final Path productCsvPath;
 	private final CustomOverrideResolver overrideResolver;
+	private final AppConfig config;
 
 	public ParseBotService(AppConfig config) throws IOException {
+		this.config = config;
 		this.mailConfig = config.getMailConfig();
 		this.mailReader = new MailboxReader(config.getMailConfig());
 		this.mailWriter = new MailboxWriter(mailReader);
@@ -51,7 +54,19 @@ public class ParseBotService {
 
 			String customerCsv = Files.readString(customerCsvPath);
 			String productCsv = Files.readString(productCsvPath);
-			DataParser parser = new DataParser(claudeClient, customerCsv, productCsv);
+
+			PriceMatrix priceMatrix = null;
+			String priceMatrixPath = config.getPriceMatrixCsvPath();
+			if (!priceMatrixPath.isBlank()) {
+				Path matrixPath = Path.of(priceMatrixPath);
+				if (Files.exists(matrixPath)) {
+					priceMatrix = PriceMatrix.load(Files.readString(matrixPath));
+				} else {
+					log.warn("Price matrix CSV configured but not found: {}", matrixPath);
+				}
+			}
+
+			DataParser parser = new DataParser(claudeClient, customerCsv, productCsv, priceMatrix);
 
 			// Collect raw data from all sources
 			List<RawMailboxData> rawData = new ArrayList<>();

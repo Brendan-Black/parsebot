@@ -93,6 +93,10 @@ public class AppConfig {
 		return props.getProperty("custom.productlists.dir", "custom_productlists");
 	}
 
+	public String getPriceMatrixCsvPath() {
+		return props.getProperty("csv.pricematrix", "");
+	}
+
 	public static class SftpConfig {
 
 		private final Properties props;
