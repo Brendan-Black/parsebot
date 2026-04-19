@@ -18,22 +18,22 @@ public final class ConfigSchema {
   public record Carrier(String gateway, String carrier) {}
 
   public static final List<Carrier> SMS_CARRIERS = List.of(
-      new Carrier("#@vtext.com", "Verizon"),
-      new Carrier("#@tmomail.net", "T-Mobile"),
-      new Carrier("#@txt.att.net", "AT&T"),
-      new Carrier("#@messaging.sprintpcs.com", "Sprint"),
-      new Carrier("#@msg.fi.google.com", "Google Fi"),
-      new Carrier("#@message.ting.com", "Ting"),
-      new Carrier("#@email.uscc.net", "US Cellular"),
-      new Carrier("#@sms.cricketwireless.net", "Cricket"),
-      new Carrier("#@myboostmobile.com", "Boost"),
+      new Carrier("#@vtext.com",								 "Verizon"),
+      new Carrier("#@tmomail.net", 							 "T-Mobile"),
+      new Carrier("#@txt.att.net",							 "AT&T"),
+      new Carrier("#@messaging.sprintpcs.com",	 "Sprint"),
+      new Carrier("#@msg.fi.google.com",				 "Google Fi"),
+      new Carrier("#@message.ting.com",					 "Ting"),
+      new Carrier("#@email.uscc.net",						 "US Cellular"),
+      new Carrier("#@sms.cricketwireless.net",   "Cricket"),
+      new Carrier("#@myboostmobile.com",				 "Boost"),
       new Carrier("#@text.republicwireless.com", "Republic"),
-      new Carrier("#@vmobl.com", "Virgin Mobile"),
-      new Carrier("#@mmst5.tracfone.com", "Tracfone"),
-      new Carrier("#@mymetropcs.com", "Metro"),
-      new Carrier("#@sms.mypage.com", "PagePlus"),
-      new Carrier("#@mailmymobile.net", "Consumer Cellular"),
-      new Carrier("#@cspire1.com", "C-Spire")
+      new Carrier("#@vmobl.com"	,								 "Virgin Mobile"),
+      new Carrier("#@mmst5.tracfone.com",			   "Tracfone"),
+      new Carrier("#@mymetropcs.com",					   "Metro"),
+      new Carrier("#@sms.mypage.com",						 "PagePlus"),
+      new Carrier("#@mailmymobile.net", 				 "Consumer Cellular"),
+      new Carrier("#@cspire1.com", 							 "C-Spire")
   );
 
   public static final List<Section> SECTIONS = List.of(
@@ -74,9 +74,9 @@ public final class ConfigSchema {
       ), null),
       new Section("Notifications - Email (SMTP)", List.of(
           new Field(ConfigKey.NOTIFY_SMTP_ENABLED,   "Enabled",             "false", FieldType.BOOLEAN),
-          new Field(ConfigKey.NOTIFY_SMTP_TO,        "To Addresses",        "",      FieldType.LIST),
-          new Field(ConfigKey.NOTIFY_SMTP_TO_URGENT, "Urgent To Addresses", "",      FieldType.LIST),
-          new Field(ConfigKey.NOTIFY_SMTP_STARTTLS,  "STARTTLS",            "true",  FieldType.BOOLEAN)
+          new Field(ConfigKey.NOTIFY_SMTP_TO,        "Notification Recipients",        "",      FieldType.LIST),
+          new Field(ConfigKey.NOTIFY_SMTP_TO_URGENT, "Urgent Notification Recipients", "",      FieldType.LIST),
+          new Field(ConfigKey.NOTIFY_SMTP_STARTTLS,  "Use Encrypted Connection", "true",  FieldType.BOOLEAN)
       ), SectionHint.SMS_CARRIERS),
       new Section("Notifications - Teams", List.of(
           new Field(ConfigKey.NOTIFY_TEAMS_ENABLED,     "Enabled",     "false", FieldType.BOOLEAN),
