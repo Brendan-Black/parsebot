@@ -1,0 +1,81 @@
+plugins {
+  id 'java'
+  id 'application'
+}
+
+application {
+  mainClass = 'black.parsebot.admin.Main'
+}
+
+java {
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(25)
+  }
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  implementation project(':shared')
+  testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+  useJUnitPlatform()
+}
+
+tasks.named('run') {
+  standardInput = System.in
+  jvmArgs += '-Dconsole.attached=false'
+}
+
+// --- Frontend build (Preact + Vite + TypeScript) ---
+
+def frontendDir = file('frontend')
+def frontendDist = file("${frontendDir}/dist")
+def generatedWeb = file("${layout.buildDirectory.get().asFile}/generated-resources/web")
+
+def isWindows = System.getProperty('os.name').toLowerCase().contains('windows')
+def npmCmd = isWindows ? ['cmd', '/c', 'npm'] : ['npm']
+
+tasks.register('npmInstall', Exec) {
+  inputs.file("${frontendDir}/package.json")
+  outputs.dir("${frontendDir}/node_modules")
+  workingDir = frontendDir
+  commandLine(*npmCmd, 'install')
+}
+
+tasks.register('npmBuild', Exec) {
+  dependsOn 'npmInstall'
+  inputs.dir("${frontendDir}/src")
+  inputs.file("${frontendDir}/index.html")
+  inputs.file("${frontendDir}/package.json")
+  inputs.file("${frontendDir}/vite.config.ts")
+  inputs.file("${frontendDir}/tsconfig.json")
+  outputs.dir(frontendDist)
+  workingDir = frontendDir
+  commandLine(*npmCmd, 'run', 'build')
+}
+
+tasks.register('copyFrontend', Copy) {
+  dependsOn 'npmBuild'
+  from frontendDist
+  into generatedWeb
+}
+
+sourceSets {
+  main {
+    resources {
+      srcDir "${layout.buildDirectory.get().asFile}/generated-resources"
+    }
+  }
+}
+
+processResources.dependsOn('copyFrontend')
+
+tasks.named('clean') {
+  delete frontendDist
+}

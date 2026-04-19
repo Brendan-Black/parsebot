@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import black.parsebot.notify.NotificationDispatcher;
 import black.parsebot.storage.Storage;
 
-public class EventBus {
+public class EventBus implements EventPublisher {
 
   private static final Logger log = LoggerFactory.getLogger(EventBus.class);
 
@@ -20,6 +20,7 @@ public class EventBus {
     this.dispatcher = dispatcher;
   }
 
+  @Override
   public void publish(Event event) {
     storage.append(event);
 

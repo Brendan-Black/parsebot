@@ -11,14 +11,9 @@ $subprojects = @(
         MainJar   = "service-0.1.0.jar"
     },
     @{
-        Name      = "installer"
-        MainClass = "black.parsebot.installer.Main"
-        MainJar   = "installer-0.1.0.jar"
-    },
-    @{
-        Name      = "check-events"
-        MainClass = "black.parsebot.checkevents.Main"
-        MainJar   = "check-events-0.1.0.jar"
+        Name      = "admin"
+        MainClass = "black.parsebot.admin.Main"
+        MainJar   = "admin-0.1.0.jar"
     }
 )
 
@@ -116,43 +111,23 @@ Write-Host "`nMerging into single distribution folder..."
 $serviceImage = "$tempDir/service"
 Copy-Item -Recurse "$serviceImage/*" $stageDir
 
-# Copy the installer executable alongside the service executable
-$installerExe = "$tempDir/installer/installer.exe"
-if (Test-Path $installerExe) {
-    Copy-Item $installerExe $stageDir
+# Copy the admin executable alongside the service executable
+$adminExe = "$tempDir/admin/admin.exe"
+if (Test-Path $adminExe) {
+    Copy-Item $adminExe $stageDir
 }
 
-# Copy any installer-only JARs into the app directory
-$installerAppDir = "$tempDir/installer/app"
-if (Test-Path $installerAppDir) {
-    Get-ChildItem "$installerAppDir/*.jar" | ForEach-Object {
+# Copy any admin-only JARs into the app directory
+$adminAppDir = "$tempDir/admin/app"
+if (Test-Path $adminAppDir) {
+    Get-ChildItem "$adminAppDir/*.jar" | ForEach-Object {
         $dest = Join-Path "$stageDir/app" $_.Name
         if (-not (Test-Path $dest)) {
             Copy-Item $_.FullName $dest
         }
     }
-    # Copy installer .cfg so the exe can find its main class
-    Get-ChildItem "$installerAppDir/*.cfg" | ForEach-Object {
-        Copy-Item $_.FullName (Join-Path "$stageDir/app" $_.Name)
-    }
-}
-
-# Copy the check-events executable alongside the other executables
-$checkEventsExe = "$tempDir/check-events/check-events.exe"
-if (Test-Path $checkEventsExe) {
-    Copy-Item $checkEventsExe $stageDir
-}
-
-# Copy any check-events-only JARs into the app directory
-$checkEventsAppDir = "$tempDir/check-events/app"
-if (Test-Path $checkEventsAppDir) {
-    Get-ChildItem "$checkEventsAppDir/*.jar" | ForEach-Object {
-        $dest = Join-Path "$stageDir/app" $_.Name
-        if (-not (Test-Path $dest)) {
-            Copy-Item $_.FullName $dest
-        }
-    }
-    Get-ChildItem "$checkEventsAppDir/*.cfg" | ForEach-Object {
+    # Copy admin .cfg so the exe can find its main class
+    Get-ChildItem "$adminAppDir/*.cfg" | ForEach-Object {
         Copy-Item $_.FullName (Join-Path "$stageDir/app" $_.Name)
     }
 }

@@ -19,29 +19,29 @@ Extract `ParseBot.zip` to a permanent location on the target machine (e.g., `C:\
 
 ```
 ParseBot/
-├── installer.exe    # Interactive setup wizard
+├── admin.exe        # Administration tool (install, uninstall, events, status)
 ├── service.exe      # The ParseBot service
 ├── app/             # Application files
 └── runtime/         # Bundled Java runtime
 ```
 
-### 2. Run the installer
+### 2. Run the admin tool
 
-**Right-click `installer.exe` and select "Run as administrator".**
+**Right-click `admin.exe` and select "Run as administrator".**
 
-A configuration dialog will appear with fields for every parameter described below. Fill in the required values and click **Install**.
+Your default web browser will open to the ParseBot admin UI. Click **Install**, fill in the configuration fields described below, and click **Install** again.
 
-Once the dialog closes, ParseBot is registered as a Windows service, started immediately, and set to start automatically on boot.
+Once the install completes, ParseBot is registered as a Windows service, started immediately, and set to start automatically on boot.
 
 ### 3. Verify
 
-In the Services application, confirm that the status of **ParseBot Service** shows **Running**.
+In the Services application, confirm that the status of **ParseBot Service** shows **Running**. You can also click **Status** in the admin UI.
 
-Logs are written to `logs/parsebot.log` in the installation folder.
+Logs are written to `logs/parsebot.log` in the installation folder. Click **Events** in the admin UI to browse them.
 
 ## Uninstallation
 
-**Right-click `installer.exe` and select "Run as administrator".** A dialog will ask whether you want to Install or Uninstall -- click **Uninstall**. The service will be stopped and removed.
+**Right-click `admin.exe` and select "Run as administrator".** From the home screen, click **Uninstall**, then confirm. The service will be stopped and removed.
 
 ---
 
@@ -120,48 +120,27 @@ These settings configure the remote server where parsed JSON results are uploade
 
 ## Advanced (Command Line)
 
-For users who prefer command-line operation, the installer supports the following commands. All commands must be run from an **Administrator** terminal.
+`admin.exe` accepts the following subcommands. All must be run from an **Administrator** terminal.
 
-### Install
+| Command | Effect |
+|---------|--------|
+| `admin.exe` | Launch the admin web UI (default landing page). |
+| `admin.exe install` | Launch the UI on the install page. |
+| `admin.exe events` | Launch the UI on the events page. |
+| `admin.exe uninstall` | Stop and remove the service. No UI. |
+| `admin.exe status` | Print service status to the console. No UI. |
 
-```
-installer.exe install
-```
+Flags:
 
-To specify a service executable in a different location:
+- `--port <n>` -- bind the web server to a specific port (default: random free port).
+- `--exe <path>` -- path to `service.exe` (default: resolved relative to `admin.exe`).
+- `--logs <dir>` -- directory to read event logs from (default: `./logs`).
 
-```
-installer.exe install --exe C:\path\to\service.exe
-```
+The admin server binds to `127.0.0.1` only and shuts itself down automatically if the browser tab is closed (heartbeat timeout ~10 seconds).
 
-To preview the resulting service command without registering it:
-
-```
-installer.exe install --dry-run
-```
-
-### Start the service
+### Start / stop the service directly
 
 ```
 sc start ParseBot
-```
-
-### Check service status
-
-```
-installer.exe status
-```
-
-### Stop the service
-
-```
 sc stop ParseBot
 ```
-
-### Uninstall
-
-```
-installer.exe uninstall
-```
-
-This stops the service if it is running and removes it from the Windows service registry.

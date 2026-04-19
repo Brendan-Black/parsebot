@@ -1,0 +1,100 @@
+package black.parsebot.admin.server;
+
+import com.sun.net.httpserver.HttpServer;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.file.Path;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import black.parsebot.admin.api.ConfigApi;
+import black.parsebot.admin.api.EventsApi;
+import black.parsebot.admin.api.HeartbeatApi;
+import black.parsebot.admin.api.ServiceApi;
+import black.parsebot.admin.api.ShutdownApi;
+import black.parsebot.admin.api.TestParseApi;
+import black.parsebot.admin.service.ServiceManager;
+
+public final class AdminServer {
+
+  private static final long HEARTBEAT_TIMEOUT_MS = 10_000;
+  private static final long WATCHDOG_INTERVAL_MS = 2_000;
+  private static final long INITIAL_GRACE_MS = 60_000;
+
+  private final ServiceManager serviceManager;
+  private final Path logDir;
+  private final CountDownLatch shutdownLatch = new CountDownLatch(1);
+
+  private HttpServer httpServer;
+  private ScheduledExecutorService watchdog;
+  private volatile long lastHeartbeatMs = 0;
+  private volatile boolean heartbeatSeen = false;
+
+  public AdminServer(ServiceManager serviceManager, Path logDir) {
+    this.serviceManager = serviceManager;
+    this.logDir = logDir;
+  }
+
+  public int start(int requestedPort) throws IOException {
+    httpServer = HttpServer.create(new InetSocketAddress("127.0.0.1", requestedPort), 0);
+    httpServer.createContext("/api/schema", new ConfigApi.SchemaHandler());
+    httpServer.createContext("/api/config", new ConfigApi.ConfigHandler(serviceManager));
+    httpServer.createContext("/api/service/install", new ServiceApi.InstallHandler(serviceManager));
+    httpServer.createContext("/api/service/uninstall", new ServiceApi.UninstallHandler(serviceManager));
+    httpServer.createContext("/api/service/status", new ServiceApi.StatusHandler(serviceManager));
+    httpServer.createContext("/api/events", new EventsApi.EventsHandler(logDir));
+    httpServer.createContext("/api/test-parse", new TestParseApi.Handler());
+    httpServer.createContext("/api/heartbeat", new HeartbeatApi.Handler(this));
+    httpServer.createContext("/api/shutdown", new ShutdownApi.Handler(this));
+    httpServer.createContext("/", new StaticHandler());
+    httpServer.setExecutor(null);
+    httpServer.start();
+    startWatchdog();
+    return httpServer.getAddress().getPort();
+  }
+
+  public void recordHeartbeat() {
+    lastHeartbeatMs = System.currentTimeMillis();
+    heartbeatSeen = true;
+  }
+
+  public void shutdown() {
+    if (watchdog != null) watchdog.shutdownNow();
+    if (httpServer != null) httpServer.stop(1);
+    shutdownLatch.countDown();
+  }
+
+  public void awaitShutdown() throws InterruptedException {
+    shutdownLatch.await();
+  }
+
+  private void startWatchdog() {
+    watchdog = Executors.newSingleThreadScheduledExecutor(r -> {
+      Thread t = new Thread(r, "admin-watchdog");
+      t.setDaemon(true);
+      return t;
+    });
+    long startMs = System.currentTimeMillis();
+    watchdog.scheduleAtFixedRate(() -> watchdogCheck(startMs),
+        WATCHDOG_INTERVAL_MS, WATCHDOG_INTERVAL_MS, TimeUnit.MILLISECONDS);
+  }
+
+  private void watchdogCheck(long startMs) {
+    long now = System.currentTimeMillis();
+    if (!heartbeatSeen) {
+      if (now - startMs > INITIAL_GRACE_MS) {
+        System.err.println("No browser ever connected — shutting down.");
+        shutdown();
+      }
+      return;
+    }
+    long elapsed = now - lastHeartbeatMs;
+    if (elapsed > HEARTBEAT_TIMEOUT_MS) {
+      System.err.println("No heartbeat for " + elapsed + "ms — shutting down.");
+      shutdown();
+    }
+  }
+}
