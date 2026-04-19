@@ -11,30 +11,30 @@ public final class SftpConfig {
   }
 
   public String getHost() {
-    return props.getProperty("sftp.host", "");
+    return props.getProperty(ConfigKey.SFTP_HOST, "");
   }
 
   public int getPort() {
-    return Integer.parseInt(props.getProperty("sftp.port", "22"));
+    return Integer.parseInt(props.getProperty(ConfigKey.SFTP_PORT, "22"));
   }
 
   public String getUsername() {
-    return props.getProperty("sftp.username", "");
+    return props.getProperty(ConfigKey.SFTP_USERNAME, "");
   }
 
   public String getPassword() {
-    return props.getProperty("sftp.password", "");
+    return props.getProperty(ConfigKey.SFTP_PASSWORD, "");
   }
 
   public String getPrivateKey() {
-    return props.getProperty("sftp.private.key", "");
+    return props.getProperty(ConfigKey.SFTP_PRIVATE_KEY, "");
   }
 
   public String getRemoteDirectory() {
-    return props.getProperty("sftp.remote.directory", "/upload");
+    return props.getProperty(ConfigKey.SFTP_REMOTE_DIRECTORY, "/upload");
   }
 
   public String getProtocol() {
-    return props.getProperty("sftp.remote.protocol", "sftp");
+    return props.getProperty(ConfigKey.SFTP_REMOTE_PROTOCOL, "sftp");
   }
 }

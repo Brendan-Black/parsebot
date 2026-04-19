@@ -11,34 +11,34 @@ public final class MailConfig {
   }
 
   public String getHost() {
-    return props.getProperty("mail.host", "");
+    return props.getProperty(ConfigKey.MAIL_HOST, "");
   }
 
   public int getPort() {
-    return Integer.parseInt(props.getProperty("mail.port", "993"));
+    return Integer.parseInt(props.getProperty(ConfigKey.MAIL_PORT, "993"));
   }
 
   public String getUsername() {
-    return props.getProperty("mail.username", "");
+    return props.getProperty(ConfigKey.MAIL_USERNAME, "");
   }
 
   public String getPassword() {
-    return props.getProperty("mail.password", "");
+    return props.getProperty(ConfigKey.MAIL_PASSWORD, "");
   }
 
   public String getFolder() {
-    return props.getProperty("mail.folder", "INBOX");
+    return props.getProperty(ConfigKey.MAIL_FOLDER, "INBOX");
   }
 
   public String getSuccessFolder() {
-    return props.getProperty("mail.folder.success", "Processed");
+    return props.getProperty(ConfigKey.MAIL_FOLDER_SUCCESS, "Processed");
   }
 
   public String getFailureFolder() {
-    return props.getProperty("mail.folder.failed", "Failed");
+    return props.getProperty(ConfigKey.MAIL_FOLDER_FAILED, "Failed");
   }
 
   public String getProtocol() {
-    return props.getProperty("mail.protocol", "imaps");
+    return props.getProperty(ConfigKey.MAIL_PROTOCOL, "imaps");
   }
 }

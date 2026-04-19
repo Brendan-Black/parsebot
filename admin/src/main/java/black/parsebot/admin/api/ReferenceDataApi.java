@@ -7,6 +7,7 @@ import java.util.Map;
 import com.sun.net.httpserver.HttpExchange;
 
 import black.parsebot.admin.server.JsonHandler;
+import black.parsebot.config.ConfigKey;
 import black.parsebot.admin.service.ServiceManager;
 
 public final class ReferenceDataApi {
@@ -31,9 +32,9 @@ public final class ReferenceDataApi {
       requireMethod(exchange, "GET");
       Map<String, String> cfg = serviceManager.currentConfig();
       return new ReferenceDataResponse(
-          load(cfg.get("csv.customers")),
-          load(cfg.get("csv.products")),
-          load(cfg.get("csv.pricematrix"))
+          load(cfg.get(ConfigKey.CSV_CUSTOMERS)),
+          load(cfg.get(ConfigKey.CSV_PRODUCTS)),
+          load(cfg.get(ConfigKey.CSV_PRICEMATRIX))
       );
     }
 

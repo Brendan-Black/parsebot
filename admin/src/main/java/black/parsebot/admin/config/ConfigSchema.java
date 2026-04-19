@@ -2,6 +2,8 @@ package black.parsebot.admin.config;
 
 import java.util.List;
 
+import black.parsebot.config.ConfigKey;
+
 public final class ConfigSchema {
 
   public static final String SERVICE_NAME = "ParseBot";
@@ -9,9 +11,9 @@ public final class ConfigSchema {
   public static final String DESCRIPTION = "ParseBot email parsing service";
   public static final String SERVICE_EXE = "service.exe";
 
-  public record Field(String key, String label, String defaultValue, String type) {}
+  public record Field(String key, String label, String defaultValue, FieldType type) {}
 
-  public record Section(String title, List<Field> fields, String hint) {}
+  public record Section(String title, List<Field> fields, SectionHint hint) {}
 
   public record Carrier(String gateway, String carrier) {}
 
@@ -36,49 +38,49 @@ public final class ConfigSchema {
 
   public static final List<Section> SECTIONS = List.of(
       new Section("General", List.of(
-          new Field("poll.interval.seconds", "Poll Interval (seconds)", "60", "text")
+          new Field(ConfigKey.POLL_INTERVAL_SECONDS, "Poll Interval (seconds)", "60", FieldType.TEXT)
       ), null),
       new Section("Mail (IMAP)", List.of(
-          new Field("mail.host",           "Host",           "",          "text"),
-          new Field("mail.port",           "Port",           "993",       "text"),
-          new Field("mail.username",       "Username",       "",          "text"),
-          new Field("mail.password",       "Password",       "",          "password"),
-          new Field("mail.folder",         "Folder",         "INBOX",     "text"),
-          new Field("mail.folder.success", "Success Folder", "Processed", "text"),
-          new Field("mail.folder.failed",  "Failed Folder",  "Failed",    "text"),
-          new Field("mail.protocol",       "Protocol",       "imaps",     "text")
+          new Field(ConfigKey.MAIL_HOST,           "Host",           "",          FieldType.TEXT),
+          new Field(ConfigKey.MAIL_PORT,           "Port",           "993",       FieldType.TEXT),
+          new Field(ConfigKey.MAIL_USERNAME,       "Username",       "",          FieldType.TEXT),
+          new Field(ConfigKey.MAIL_PASSWORD,       "Password",       "",          FieldType.PASSWORD),
+          new Field(ConfigKey.MAIL_FOLDER,         "Folder",         "INBOX",     FieldType.TEXT),
+          new Field(ConfigKey.MAIL_FOLDER_SUCCESS, "Success Folder", "Processed", FieldType.TEXT),
+          new Field(ConfigKey.MAIL_FOLDER_FAILED,  "Failed Folder",  "Failed",    FieldType.TEXT),
+          new Field(ConfigKey.MAIL_PROTOCOL,       "Protocol",       "imaps",     FieldType.TEXT)
       ), null),
       new Section("Claude API", List.of(
-          new Field("claude.api.key", "API Key", "", "password")
+          new Field(ConfigKey.CLAUDE_API_KEY, "API Key", "", FieldType.PASSWORD)
       ), null),
       new Section("Reference Data", List.of(
-          new Field("csv.customers",           "Customers CSV Path",             "", "file"),
-          new Field("csv.products",            "Products CSV Path",              "", "file"),
-          new Field("csv.pricematrix",         "Price Matrix CSV Path",          "", "file"),
-          new Field("custom.rules.dir",        "Custom Rules Directory",         "", "folder"),
-          new Field("custom.productlists.dir", "Custom Product Lists Directory", "", "folder")
+          new Field(ConfigKey.CSV_CUSTOMERS,           "Customers CSV Path",             "", FieldType.FILE),
+          new Field(ConfigKey.CSV_PRODUCTS,            "Products CSV Path",              "", FieldType.FILE),
+          new Field(ConfigKey.CSV_PRICEMATRIX,         "Price Matrix CSV Path",          "", FieldType.FILE),
+          new Field(ConfigKey.CUSTOM_RULES_DIR,        "Custom Rules Directory",         "", FieldType.FOLDER),
+          new Field(ConfigKey.CUSTOM_PRODUCTLISTS_DIR, "Custom Product Lists Directory", "", FieldType.FOLDER)
       ), null),
       new Section("SFTP Output", List.of(
-          new Field("sftp.host",             "Host",             "",        "text"),
-          new Field("sftp.port",             "Port",             "22",      "text"),
-          new Field("sftp.username",         "Username",         "",        "text"),
-          new Field("sftp.password",         "Password",         "",        "password"),
-          new Field("sftp.private.key",      "Private Key Path", "",        "file"),
-          new Field("sftp.remote.directory", "Remote Directory", "/upload", "text")
+          new Field(ConfigKey.SFTP_HOST,             "Host",             "",        FieldType.TEXT),
+          new Field(ConfigKey.SFTP_PORT,             "Port",             "22",      FieldType.TEXT),
+          new Field(ConfigKey.SFTP_USERNAME,         "Username",         "",        FieldType.TEXT),
+          new Field(ConfigKey.SFTP_PASSWORD,         "Password",         "",        FieldType.PASSWORD),
+          new Field(ConfigKey.SFTP_PRIVATE_KEY,      "Private Key Path", "",        FieldType.FILE),
+          new Field(ConfigKey.SFTP_REMOTE_DIRECTORY, "Remote Directory", "/upload", FieldType.TEXT)
       ), null),
       new Section("Events", List.of(
-          new Field("events.consecutive.failure.threshold", "Consecutive Failure Threshold", "3",     "text"),
-          new Field("events.report.time",                   "Report Time",                   "08:00", "time")
+          new Field(ConfigKey.EVENTS_CONSECUTIVE_FAILURE_THRESHOLD, "Consecutive Failure Threshold", "3",     FieldType.TEXT),
+          new Field(ConfigKey.EVENTS_REPORT_TIME,                   "Report Time",                   "08:00", FieldType.TIME)
       ), null),
       new Section("Notifications - Email (SMTP)", List.of(
-          new Field("notify.smtp.enabled",   "Enabled",             "false", "boolean"),
-          new Field("notify.smtp.to",        "To Addresses",        "",      "list"),
-          new Field("notify.smtp.to.urgent", "Urgent To Addresses", "",      "list"),
-          new Field("notify.smtp.starttls",  "STARTTLS",            "true",  "boolean")
-      ), "sms-carriers"),
+          new Field(ConfigKey.NOTIFY_SMTP_ENABLED,   "Enabled",             "false", FieldType.BOOLEAN),
+          new Field(ConfigKey.NOTIFY_SMTP_TO,        "To Addresses",        "",      FieldType.LIST),
+          new Field(ConfigKey.NOTIFY_SMTP_TO_URGENT, "Urgent To Addresses", "",      FieldType.LIST),
+          new Field(ConfigKey.NOTIFY_SMTP_STARTTLS,  "STARTTLS",            "true",  FieldType.BOOLEAN)
+      ), SectionHint.SMS_CARRIERS),
       new Section("Notifications - Teams", List.of(
-          new Field("notify.teams.enabled",     "Enabled",     "false", "boolean"),
-          new Field("notify.teams.webhook.url", "Webhook URL", "",      "text")
+          new Field(ConfigKey.NOTIFY_TEAMS_ENABLED,     "Enabled",     "false", FieldType.BOOLEAN),
+          new Field(ConfigKey.NOTIFY_TEAMS_WEBHOOK_URL, "Webhook URL", "",      FieldType.TEXT)
       ), null)
   );
 

@@ -11,22 +11,22 @@ public final class ReferenceDataConfig {
   }
 
   public String getCustomerCsvPath() {
-    return props.getProperty("csv.customers", "customers.csv");
+    return props.getProperty(ConfigKey.CSV_CUSTOMERS, "customers.csv");
   }
 
   public String getProductCsvPath() {
-    return props.getProperty("csv.products", "products.csv");
+    return props.getProperty(ConfigKey.CSV_PRODUCTS, "products.csv");
   }
 
   public String getPriceMatrixCsvPath() {
-    return props.getProperty("csv.pricematrix", "");
+    return props.getProperty(ConfigKey.CSV_PRICEMATRIX, "");
   }
 
   public String getCustomRulesDir() {
-    return props.getProperty("custom.rules.dir", "custom_rules");
+    return props.getProperty(ConfigKey.CUSTOM_RULES_DIR, "custom_rules");
   }
 
   public String getCustomProductListsDir() {
-    return props.getProperty("custom.productlists.dir", "custom_productlists");
+    return props.getProperty(ConfigKey.CUSTOM_PRODUCTLISTS_DIR, "custom_productlists");
   }
 }

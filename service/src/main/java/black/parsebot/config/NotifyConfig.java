@@ -13,37 +13,37 @@ public final class NotifyConfig {
   // SMTP (non-critical)
 
   public boolean isSmtpEnabled() {
-    return Boolean.parseBoolean(props.getProperty("notify.smtp.enabled", "false"));
+    return Boolean.parseBoolean(props.getProperty(ConfigKey.NOTIFY_SMTP_ENABLED, "false"));
   }
 
   public String getSmtpHost() {
-    String host = props.getProperty("notify.smtp.host", "");
-    return host.isEmpty() ? props.getProperty("mail.host", "") : host;
+    String host = props.getProperty(ConfigKey.NOTIFY_SMTP_HOST, "");
+    return host.isEmpty() ? props.getProperty(ConfigKey.MAIL_HOST, "") : host;
   }
 
   public int getSmtpPort() {
-    return Integer.parseInt(props.getProperty("notify.smtp.port", "587"));
+    return Integer.parseInt(props.getProperty(ConfigKey.NOTIFY_SMTP_PORT, "587"));
   }
 
   public String getSmtpTo() {
-    return props.getProperty("notify.smtp.to", "");
+    return props.getProperty(ConfigKey.NOTIFY_SMTP_TO, "");
   }
 
   public String getSmtpToUrgent() {
-    return props.getProperty("notify.smtp.to.urgent", "");
+    return props.getProperty(ConfigKey.NOTIFY_SMTP_TO_URGENT, "");
   }
 
   public boolean isSmtpStartTls() {
-    return Boolean.parseBoolean(props.getProperty("notify.smtp.starttls", "true"));
+    return Boolean.parseBoolean(props.getProperty(ConfigKey.NOTIFY_SMTP_STARTTLS, "true"));
   }
 
   // Teams (critical)
 
   public boolean isTeamsEnabled() {
-    return Boolean.parseBoolean(props.getProperty("notify.teams.enabled", "false"));
+    return Boolean.parseBoolean(props.getProperty(ConfigKey.NOTIFY_TEAMS_ENABLED, "false"));
   }
 
   public String getTeamsWebhookUrl() {
-    return props.getProperty("notify.teams.webhook.url", "");
+    return props.getProperty(ConfigKey.NOTIFY_TEAMS_WEBHOOK_URL, "");
   }
 }

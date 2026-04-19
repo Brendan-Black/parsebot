@@ -11,6 +11,6 @@ public final class GeneralConfig {
   }
 
   public long getPollIntervalSeconds() {
-    return Long.parseLong(props.getProperty("poll.interval.seconds", "60"));
+    return Long.parseLong(props.getProperty(ConfigKey.POLL_INTERVAL_SECONDS, "60"));
   }
 }

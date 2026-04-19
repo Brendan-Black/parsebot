@@ -11,6 +11,6 @@ public final class ClaudeConfig {
   }
 
   public String getApiKey() {
-    return props.getProperty("claude.api.key", "");
+    return props.getProperty(ConfigKey.CLAUDE_API_KEY, "");
   }
 }
