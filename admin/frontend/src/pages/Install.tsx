@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'preact/hooks';
-import { api, InstallResult, Schema } from '../api';
+import { api, Field, InstallResult, Schema } from '../api';
 import { FieldInput } from '../components/FieldInput';
 import { SmsCarriers } from '../components/SmsCarriers';
-import { Route, SectionHint, routeHref } from '../consts';
+import { FieldType, Route, SectionHint, routeHref } from '../consts';
+
+interface SubmittedResult {
+  result: InstallResult;
+  values: Record<string, string>;
+  dryRun: boolean;
+}
 
 export function Install() {
   const [schema, setSchema] = useState<Schema | null>(null);
@@ -10,7 +16,7 @@ export function Install() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<InstallResult | null>(null);
+  const [submitted, setSubmitted] = useState<SubmittedResult | null>(null);
   const [dryRun, setDryRun] = useState(false);
 
   useEffect(() => {
@@ -34,7 +40,7 @@ export function Install() {
     setError(null);
     try {
       const r = await api.install(values, dryRun);
-      setResult(r);
+      setSubmitted({ result: r, values: { ...values }, dryRun });
     } catch (err) {
       setError(String(err));
     } finally {
@@ -45,13 +51,21 @@ export function Install() {
   if (error) return <div class="card error">Failed: {error}</div>;
   if (!schema) return <div class="card muted">Loading schema…</div>;
 
-  if (result) {
+  if (submitted) {
+    const { result, values: submittedValues, dryRun: wasDryRun } = submitted;
+    const titlePrefix = wasDryRun ? '[dry run] ' : '';
     return (
       <div class="card">
         <h2 class={result.success ? 'success' : 'error'}>
-          {result.success ? 'Success' : 'Failed'}
+          {titlePrefix}{result.success ? 'Success' : 'Failed'}
         </h2>
         <p>{result.message}</p>
+        {wasDryRun && (
+          <>
+            <h3 style={{ marginTop: 20, marginBottom: 8, fontSize: 15 }}>Supplied values</h3>
+            <SuppliedValuesTable schema={schema} values={submittedValues} />
+          </>
+        )}
         {result.binPath && (
           <details>
             <summary>binPath</summary>
@@ -97,4 +111,36 @@ export function Install() {
       </div>
     </form>
   );
+}
+
+function SuppliedValuesTable({ schema, values }: { schema: Schema; values: Record<string, string> }) {
+  const fields: Field[] = schema.sections.flatMap((s) => s.fields);
+  const rows = fields.map((f) => ({ field: f, value: values[f.key] ?? '' }));
+  return (
+    <table>
+      <thead>
+        <tr>
+          <th style={{ width: '35%' }}>Field</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(({ field, value }) => (
+          <tr key={field.key}>
+            <td>
+              <div>{field.label}</div>
+              <div class="muted" style={{ fontSize: 11 }}>{field.key}</div>
+            </td>
+            <td>{renderValue(field, value)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function renderValue(field: Field, value: string) {
+  if (value === '') return <span class="muted">(empty — default will apply)</span>;
+  if (field.type === FieldType.PASSWORD) return <span class="muted">•••••• ({value.length} chars)</span>;
+  return <code style={{ wordBreak: 'break-all' }}>{value}</code>;
 }
