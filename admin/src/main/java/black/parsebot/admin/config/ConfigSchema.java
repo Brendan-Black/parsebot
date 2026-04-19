@@ -10,6 +10,7 @@ public final class ConfigSchema {
   public static final String DISPLAY_NAME = "ParseBot Service";
   public static final String DESCRIPTION = "ParseBot email parsing service";
   public static final String SERVICE_EXE = "service.exe";
+  public static final String ADMIN_EXE = "admin.exe";
 
   public record Option(String value, String label) {}
 

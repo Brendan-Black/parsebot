@@ -21,6 +21,7 @@ import black.parsebot.admin.api.ReferenceDataApi;
 import black.parsebot.admin.api.ServiceApi;
 import black.parsebot.admin.api.ShutdownApi;
 import black.parsebot.admin.api.SandboxApi;
+import black.parsebot.admin.api.UpdateApi;
 
 public final class AdminServer {
 
@@ -57,6 +58,9 @@ public final class AdminServer {
     httpServer.createContext("/api/mode", new ModeApi.Handler(context));
     httpServer.createContext("/api/file-chooser", new FileChooserApi.Handler(context.fileChooser()));
     httpServer.createContext("/api/file-read", new FileReaderApi.Handler());
+    httpServer.createContext("/api/update/check", new UpdateApi.CheckHandler(context.updateChecker()));
+    httpServer.createContext("/api/update/apply", new UpdateApi.ApplyHandler(
+        context.updateChecker(), context.updateApplier(), this));
     httpServer.createContext("/", new StaticHandler());
     httpServer.setExecutor(null);
     httpServer.start();

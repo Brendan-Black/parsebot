@@ -4,7 +4,8 @@ export const Route = {
   UNINSTALL: 'uninstall',
   EVENTS: 'events',
   STATUS: 'status',
-  SANDBOX: 'sandbox'
+  SANDBOX: 'sandbox',
+  UPDATES: 'updates'
 } as const;
 
 export type Route = typeof Route[keyof typeof Route];
@@ -67,5 +68,7 @@ export const ApiPath = {
   FILE_CHOOSER: '/api/file-chooser',
   FILE_READ: '/api/file-read',
   HEARTBEAT: '/api/heartbeat',
-  SHUTDOWN: '/api/shutdown'
+  SHUTDOWN: '/api/shutdown',
+  UPDATE_CHECK: '/api/update/check',
+  UPDATE_APPLY: '/api/update/apply'
 } as const;

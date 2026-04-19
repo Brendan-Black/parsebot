@@ -4,16 +4,26 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Read project version from root build.gradle so JAR names stay in sync.
+$buildGradle = Get-Content "build.gradle" -Raw
+$versionMatch = [regex]::Match($buildGradle, "version\s*=\s*'([^']+)'")
+if (-not $versionMatch.Success) {
+    Write-Error "Could not find version in build.gradle"
+    exit 1
+}
+$projectVersion = $versionMatch.Groups[1].Value
+Write-Host "Project version: $projectVersion"
+
 $subprojects = @(
     @{
         Name      = "service"
         MainClass = "black.parsebot.Main"
-        MainJar   = "service-0.1.0.jar"
+        MainJar   = "service-$projectVersion.jar"
     },
     @{
         Name      = "admin"
         MainClass = "black.parsebot.admin.Main"
-        MainJar   = "admin-0.1.0.jar"
+        MainJar   = "admin-$projectVersion.jar"
     }
 )
 

@@ -23,6 +23,10 @@ export function Launcher() {
         <strong>Status</strong>
         <span>Check whether the service is running.</span>
       </a>
+      <a href={routeHref(Route.UPDATES)}>
+        <strong>Updates</strong>
+        <span>Check for new releases and install updates.</span>
+      </a>
     </div>
   );
 }

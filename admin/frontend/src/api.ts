@@ -130,6 +130,28 @@ export interface FileReadResponse {
   sizeBytes: number;
 }
 
+export interface ReleaseInfo {
+  tag: string;
+  name: string;
+  publishedAt: string | null;
+  zipAssetUrl: string;
+  zipAssetSize: number;
+  notes: string;
+  isCurrent: boolean;
+  isNewer: boolean;
+  prerelease: boolean;
+}
+
+export interface UpdateCheckResponse {
+  currentVersion: string;
+  releases: ReleaseInfo[];
+}
+
+export interface UpdateApplyResponse {
+  success: boolean;
+  message: string;
+}
+
 export class ApiError extends Error {
   constructor(message: string, readonly status: number | null, readonly path: string) {
     super(message);
@@ -215,5 +237,7 @@ export const api = {
     post<FileChooserResponse>(ApiPath.FILE_CHOOSER, { mode, initialPath, title }),
   readFile: (path: string) => post<FileReadResponse>(ApiPath.FILE_READ, { path }),
   heartbeat: () => post<{ ok: boolean }>(ApiPath.HEARTBEAT, {}),
-  shutdown: () => post<{ ok: boolean }>(ApiPath.SHUTDOWN, {})
+  shutdown: () => post<{ ok: boolean }>(ApiPath.SHUTDOWN, {}),
+  checkForUpdates: () => get<UpdateCheckResponse>(ApiPath.UPDATE_CHECK),
+  applyUpdate: (tag: string) => post<UpdateApplyResponse>(ApiPath.UPDATE_APPLY, { tag })
 };

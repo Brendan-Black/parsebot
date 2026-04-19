@@ -20,6 +20,12 @@ import black.parsebot.admin.source.MailboxPdfSource;
 import black.parsebot.admin.source.ReferenceDataSource;
 import black.parsebot.admin.source.Slf4jPseudoEventsSource;
 import black.parsebot.admin.source.SwingFileChooser;
+import black.parsebot.admin.update.DemoUpdateApplier;
+import black.parsebot.admin.update.DemoUpdateChecker;
+import black.parsebot.admin.update.GitHubUpdateChecker;
+import black.parsebot.admin.update.UpdateApplier;
+import black.parsebot.admin.update.UpdateChecker;
+import black.parsebot.admin.update.WindowsUpdateApplier;
 
 public record AdminContext(
     boolean demoMode,
@@ -28,7 +34,9 @@ public record AdminContext(
     EventsSource events,
     MailboxPdfSource mailboxPdfs,
     OrderParser orderParser,
-    FileChooser fileChooser
+    FileChooser fileChooser,
+    UpdateChecker updateChecker,
+    UpdateApplier updateApplier
 ) {
 
   public String title() {
@@ -37,6 +45,7 @@ public record AdminContext(
 
   public static AdminContext live(Path exePath, Path logDir) {
     ServiceManager sm = new WindowsServiceManager(exePath);
+    Path installDir = exePath.getParent();
     return new AdminContext(
         false,
         sm,
@@ -44,7 +53,9 @@ public record AdminContext(
         new Slf4jPseudoEventsSource(logDir),
         new ImapMailboxPdfSource(sm),
         new ClaudeApiOrderParser(),
-        new SwingFileChooser());
+        new SwingFileChooser(),
+        new GitHubUpdateChecker(),
+        new WindowsUpdateApplier(installDir, ConfigSchema.SERVICE_NAME, ConfigSchema.ADMIN_EXE));
   }
 
   public static AdminContext demo() {
@@ -56,6 +67,8 @@ public record AdminContext(
         new DemoEventsSource(),
         new DemoMailboxPdfSource(),
         new ClaudeCliOrderParser(),
-        new SwingFileChooser());
+        new SwingFileChooser(),
+        new DemoUpdateChecker(),
+        new DemoUpdateApplier());
   }
 }

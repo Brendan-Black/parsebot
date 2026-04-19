@@ -69,6 +69,16 @@ tasks.register('copyFrontend', Copy) {
   into generatedWeb
 }
 
+tasks.register('writeVersionProperties') {
+  def outFile = file("${layout.buildDirectory.get().asFile}/generated-resources/version.properties")
+  inputs.property('version', project.version)
+  outputs.file(outFile)
+  doLast {
+    outFile.parentFile.mkdirs()
+    outFile.text = "version=${project.version}\n"
+  }
+}
+
 sourceSets {
   main {
     resources {
@@ -77,7 +87,7 @@ sourceSets {
   }
 }
 
-processResources.dependsOn('copyFrontend')
+processResources.dependsOn('copyFrontend', 'writeVersionProperties')
 
 tasks.named('clean') {
   delete frontendDist

@@ -6,6 +6,7 @@ import { Uninstall } from './pages/Uninstall';
 import { Events } from './pages/Events';
 import { Status } from './pages/Status';
 import { Sandbox } from './pages/Sandbox';
+import { Updates } from './pages/Updates';
 import { useHeartbeat } from './heartbeat';
 import { LEGACY_UI_ROUTE, Route, isRoute, routeHref } from './consts';
 
@@ -71,6 +72,7 @@ export function App() {
 					<a href={routeHref(Route.EVENTS)} class={navClass(Route.EVENTS)}>Events</a>
 					<a href={routeHref(Route.SANDBOX)} class={navClass(Route.SANDBOX)}>Sandbox</a>
 					<a href={routeHref(Route.STATUS)} class={navClass(Route.STATUS)}>Status</a>
+					<a href={routeHref(Route.UPDATES)} class={navClass(Route.UPDATES)}>Updates</a>
 				</nav>
 			</header>
 			<main>
@@ -80,6 +82,7 @@ export function App() {
 				{route === Route.EVENTS && <Events />}
 				{route === Route.SANDBOX && <Sandbox />}
 				{route === Route.STATUS && <Status />}
+				{route === Route.UPDATES && <Updates />}
 			</main>
 		</div>
 	);
