@@ -117,6 +117,15 @@ export function Sandbox() {
     }
   };
 
+  const onClearPick = () => {
+    setEmailPick(null);
+    setPdfPath('');
+    setFilename('');
+    setPdfBase64('');
+    setPdfBytes(0);
+    setError(null);
+  };
+
   const onSubmit = async (e: Event) => {
     e.preventDefault();
     if (!pdfBase64) { setError('Pick a PDF first'); return; }
@@ -151,9 +160,9 @@ export function Sandbox() {
         Uses the service's configured API key by default.
       </p>
 
-      {emailActive && (
+      {emailActive && !pdfPath && (
         <div class="field">
-          <label>From mailbox:</label>
+          <label>From connected mailbox:</label>
           <select
             value={emailPick ? `${emailPick.message}:${emailPick.attachment}` : ''}
             disabled={emailFetching}
@@ -173,16 +182,23 @@ export function Sandbox() {
         </div>
       )}
 
-      <div class="field">
-        <label>PDF:</label>
-        <div class="path-picker">
-          <input type="text" value={pdfPath} readonly placeholder="(no file selected)" />
-          <button type="button" onClick={onBrowsePdf} disabled={pdfBrowsing}>
-            {pdfBrowsing ? '…' : 'Browse…'}
-          </button>
+      {!emailPick && (
+        <div class="field">
+          <label>From your computer:</label>
+          <div class="path-picker">
+            <input type="text" value={pdfPath} readonly placeholder="(no file selected)" />
+            <button type="button" onClick={onBrowsePdf} disabled={pdfBrowsing}>
+              {pdfBrowsing ? '…' : 'Browse…'}
+            </button>
+          </div>
         </div>
-      </div>
-      {filename && <p class="muted">{filename} ({pdfBytes.toLocaleString()} bytes)</p>}
+      )}
+      {filename && (
+        <p class="muted">
+          {filename} ({pdfBytes.toLocaleString()} bytes)
+          {' '}<a href="#" onClick={(e) => { e.preventDefault(); onClearPick(); }}>change source</a>
+        </p>
+      )}
 
       <div class="field">
         <label>API Key:</label>
