@@ -201,6 +201,24 @@ details pre {
   max-height: 240px;
 }
 
+.connection-lost-banner {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #b34c4c;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  text-align: center;
+  max-width: 90vw;
+  pointer-events: none;
+}
+
 .demo-banner {
   background: #fff3cd;
   color: #6b5a00;

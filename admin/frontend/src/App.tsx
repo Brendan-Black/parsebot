@@ -20,7 +20,7 @@ function currentRoute(): Route {
 export function App() {
 	const [route, setRoute] = useState<Route>(currentRoute());
 	const [demo, setDemo] = useState(false);
-	useHeartbeat();
+	const connected = useHeartbeat();
 
 	useEffect(() => {
 		const onChange = () => setRoute(currentRoute());
@@ -33,9 +33,14 @@ export function App() {
 
 	return (
 		<div class="app">
+			{!connected && (
+				<div class="connection-lost-banner" role="alert">
+					Connection to ParseBot admin service lost
+				</div>
+			)}
 			{demo && (
 				<div class="demo-banner">
-					DEMO MODE — all data is placeholder; parsing uses the local claude CLI, not the Anthropic API.
+					DEMO MODE — all data is placeholder.
 				</div>
 			)}
 			<header class="header">
