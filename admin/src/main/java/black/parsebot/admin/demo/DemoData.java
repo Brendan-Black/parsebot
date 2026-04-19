@@ -1,9 +1,12 @@
 package black.parsebot.admin.demo;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import black.parsebot.config.ConfigKey;
 import black.parsebot.event.Event;
@@ -89,15 +92,42 @@ public final class DemoData {
   }
 
   public static List<Event> events() {
-    return List.of(
-        Event.create(EventType.MAILBOX_READ_FAILED, EventSeverity.AUDIT,
-            "(demo) Failed to connect to imap.demo.local",
-            Map.of("host", "imap.demo.local", "error", "connection refused")),
-        Event.create(EventType.CLAUDE_API_FAILED, EventSeverity.AUDIT,
-            "(demo) Claude API returned status 429",
-            Map.of("filename", "po-1234.pdf", "statusCode", "429")),
-        Event.create(EventType.REPORT_CARD, EventSeverity.INFO,
-            "(demo) Daily report: 3 orders parsed",
-            Map.of("success", "3", "failed", "0")));
+    Instant now = Instant.now();
+    List<Event> events = new ArrayList<>();
+
+    events.add(event(now.minus(Duration.ofMinutes(12)),
+        EventType.MAILBOX_READ_FAILED, EventSeverity.AUDIT,
+        "(demo) Failed to connect to imap.demo.local",
+        Map.of("host", "imap.demo.local", "error", "connection refused")));
+    events.add(event(now.minus(Duration.ofHours(4)),
+        EventType.CLAUDE_API_FAILED, EventSeverity.AUDIT,
+        "(demo) Claude API returned status 429",
+        Map.of("filename", "po-1234.pdf", "statusCode", "429")));
+
+    int[][] reports = {
+        {0, 3, 0}, {1, 5, 0}, {2, 4, 1}, {3, 6, 0},
+        {4, 2, 0}, {5, 7, 0}, {6, 0, 0}, {7, 4, 0},
+        {8, 9, 1}, {9, 3, 0}, {10, 5, 0}, {11, 6, 2},
+        {12, 4, 0}, {13, 8, 0},
+    };
+    for (int[] r : reports) {
+      int daysAgo = r[0];
+      int success = r[1];
+      int failed = r[2];
+      int total = success + failed;
+      events.add(event(now.minus(Duration.ofDays(daysAgo)).minus(Duration.ofHours(6)),
+          EventType.REPORT_CARD, EventSeverity.INFO,
+          String.format("(demo) Report card: %d processed, %d succeeded, %d failed", total, success, failed),
+          Map.of(
+              "totalProcessed", String.valueOf(total),
+              "successCount", String.valueOf(success),
+              "failCount", String.valueOf(failed))));
+    }
+    return events;
+  }
+
+  private static Event event(Instant timestamp, EventType type, EventSeverity severity,
+      String message, Map<String, String> details) {
+    return new Event(UUID.randomUUID().toString(), type, severity, timestamp, message, details);
   }
 }
