@@ -23,7 +23,7 @@ import black.parsebot.event.EventType;
 import black.parsebot.model.TransformedData;
 import black.parsebot.model.raw.RawMailboxData;
 import black.parsebot.parser.ClaudeClient;
-import black.parsebot.parser.DataParser;
+import black.parsebot.processor.MailboxProcessor;
 import black.parsebot.parser.PriceMatrix;
 import black.parsebot.reader.MailboxReader;
 import black.parsebot.writer.MailboxWriter;
@@ -92,7 +92,7 @@ public class ParseBotService {
         }
       }
 
-      DataParser parser = new DataParser(claudeClient, customerCsv, productCsv, priceMatrix);
+      MailboxProcessor processor = new MailboxProcessor(claudeClient, customerCsv, productCsv, priceMatrix);
 
       // Collect raw data from all sources
       List<RawMailboxData> rawData = new ArrayList<>();
@@ -117,7 +117,7 @@ public class ParseBotService {
             log.info("Using custom overrides for sender '{}'", sender);
           }
 
-          List<TransformedData> transformed = parser.parse(email, customRules, customProductList);
+          List<TransformedData> transformed = processor.process(email, customRules, customProductList);
           if (!transformed.isEmpty()) {
             sftpWriter.write(transformed);
           }

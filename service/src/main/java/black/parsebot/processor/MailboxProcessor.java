@@ -1,7 +1,9 @@
-package black.parsebot.parser;
+package black.parsebot.processor;
 
 import black.parsebot.model.TransformedData;
 import black.parsebot.model.raw.RawMailboxData;
+import black.parsebot.parser.ClaudeClient;
+import black.parsebot.parser.PriceMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,20 +13,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class DataParser {
+public class MailboxProcessor {
 
-  private static final Logger log = LoggerFactory.getLogger(DataParser.class);
+  private static final Logger log = LoggerFactory.getLogger(MailboxProcessor.class);
 
   private final ClaudeClient claudeClient;
   private final String customerCsv;
   private final String productCsv;
   private final PriceMatrix priceMatrix;
 
-  public DataParser(ClaudeClient claudeClient, String customerCsv, String productCsv) {
+  public MailboxProcessor(ClaudeClient claudeClient, String customerCsv, String productCsv) {
     this(claudeClient, customerCsv, productCsv, null);
   }
 
-  public DataParser(ClaudeClient claudeClient, String customerCsv, String productCsv, PriceMatrix priceMatrix) {
+  public MailboxProcessor(ClaudeClient claudeClient, String customerCsv, String productCsv, PriceMatrix priceMatrix) {
     this.claudeClient = claudeClient;
     this.customerCsv = customerCsv;
     this.productCsv = productCsv;
@@ -32,21 +34,21 @@ public class DataParser {
   }
 
   /**
-  * Parses the email using default rules and product list.
+  * Processes the email using default rules and product list.
   */
-  public List<TransformedData> parse(RawMailboxData raw) throws IOException, InterruptedException {
-    return parse(raw, null, null);
+  public List<TransformedData> process(RawMailboxData raw) throws IOException, InterruptedException {
+    return process(raw, null, null);
   }
 
   /**
-  * Parses the email, using custom overrides if provided.
+  * Processes the email, using custom overrides if provided.
   *
   * @param raw              the raw email data
   * @param customRules      custom system prompt, or null to use default
   * @param customProductCsv custom product list CSV, or null to use default
   */
-  public List<TransformedData> parse(RawMailboxData raw, String customRules, String customProductCsv) throws IOException, InterruptedException {
-    log.info("Parsing: {} (source: {})", raw.getName(), raw.getClass().getSimpleName());
+  public List<TransformedData> process(RawMailboxData raw, String customRules, String customProductCsv) throws IOException, InterruptedException {
+    log.info("Processing: {} (source: {})", raw.getName(), raw.getClass().getSimpleName());
 
     List<Map.Entry<String, byte[]>> pdfs;
     try {
