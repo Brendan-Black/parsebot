@@ -20,6 +20,7 @@ function currentRoute(): Route {
 export function App() {
 	const [route, setRoute] = useState<Route>(currentRoute());
 	const [demo, setDemo] = useState(false);
+	const [dismissed, setDismissed] = useState(false);
 	const connected = useHeartbeat();
 
 	useEffect(() => {
@@ -29,13 +30,32 @@ export function App() {
 		return () => window.removeEventListener('hashchange', onChange);
 	}, []);
 
+	useEffect(() => {
+		if (connected) setDismissed(false);
+	}, [connected]);
+
 	const navClass = (target: Route) => route === target ? 'active' : '';
 
 	return (
 		<div class="app">
-			{!connected && (
-				<div class="connection-lost-banner" role="alert">
-					Connection to ParseBot admin service lost
+			{!connected && !dismissed && (
+				<div class="connection-lost-overlay" role="alert">
+					<div class="connection-lost-modal">
+						<div class="connection-lost-message">Connection to ParseBot admin service lost</div>
+						<div class="connection-lost-actions">
+							<button type="button" class="connection-lost-close" onClick={() => window.close()}>
+								Close this tab
+							</button>
+							<button type="button" class="connection-lost-dismiss" onClick={() => setDismissed(true)}>
+								Dismiss
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+			{!connected && dismissed && (
+				<div class="connection-lost-readonly" role="alert">
+					Connection lost — no changes can be saved
 				</div>
 			)}
 			{demo && (
