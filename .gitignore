@@ -5,3 +5,4 @@ UsersbrendDocuments.PAT.txt
 dist/
 node_modules/
 **/frontend/dist/
+**/logs/
