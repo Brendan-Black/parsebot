@@ -1,11 +1,6 @@
-export type FieldType =
-  | 'text'
-  | 'password'
-  | 'file'
-  | 'folder'
-  | 'boolean'
-  | 'time'
-  | 'list';
+import { ApiPath, EventSeverity, FieldType } from './consts';
+
+export { EventSeverity, FieldType };
 
 export interface Field {
   key: string;
@@ -46,8 +41,6 @@ export interface ServiceStatus {
   running: boolean;
   detail: string;
 }
-
-export type EventSeverity = 'CRITICAL' | 'INFO' | 'AUDIT';
 
 export interface ApiEvent {
   id: string;
@@ -107,15 +100,15 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 }
 
 export const api = {
-  schema: () => get<Schema>('/api/schema'),
-  config: () => get<Record<string, string>>('/api/config'),
+  schema: () => get<Schema>(ApiPath.SCHEMA),
+  config: () => get<Record<string, string>>(ApiPath.CONFIG),
   install: (values: Record<string, string>, dryRun: boolean) =>
-    post<InstallResult>('/api/service/install', { values, dryRun }),
-  uninstall: () => post<UninstallResult>('/api/service/uninstall', {}),
-  status: () => get<ServiceStatus>('/api/service/status'),
-  events: () => get<EventsResponse>('/api/events'),
-  referenceData: () => get<ReferenceDataResponse>('/api/reference-data'),
-  testParse: (req: TestParseRequest) => post<TestParseResponse>('/api/test-parse', req),
-  heartbeat: () => post<{ ok: boolean }>('/api/heartbeat', {}),
-  shutdown: () => post<{ ok: boolean }>('/api/shutdown', {})
+    post<InstallResult>(ApiPath.SERVICE_INSTALL, { values, dryRun }),
+  uninstall: () => post<UninstallResult>(ApiPath.SERVICE_UNINSTALL, {}),
+  status: () => get<ServiceStatus>(ApiPath.SERVICE_STATUS),
+  events: () => get<EventsResponse>(ApiPath.EVENTS),
+  referenceData: () => get<ReferenceDataResponse>(ApiPath.REFERENCE_DATA),
+  testParse: (req: TestParseRequest) => post<TestParseResponse>(ApiPath.TEST_PARSE, req),
+  heartbeat: () => post<{ ok: boolean }>(ApiPath.HEARTBEAT, {}),
+  shutdown: () => post<{ ok: boolean }>(ApiPath.SHUTDOWN, {})
 };

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { api, InstallResult, Schema } from '../api';
 import { FieldInput } from '../components/FieldInput';
 import { SmsCarriers } from '../components/SmsCarriers';
+import { Route, SectionHint, routeHref } from '../consts';
 
 export function Install() {
   const [schema, setSchema] = useState<Schema | null>(null);
@@ -58,7 +59,7 @@ export function Install() {
           </details>
         )}
         <div class="button-row">
-          <a href="#/launcher" class="button-link">Back to home</a>
+          <a href={routeHref(Route.LAUNCHER)} class="button-link">Back to home</a>
         </div>
       </div>
     );
@@ -77,7 +78,7 @@ export function Install() {
         ))}
       </div>
 
-      {section.hint === 'sms-carriers' && <SmsCarriers carriers={schema.smsCarriers} />}
+      {section.hint === SectionHint.SMS_CARRIERS && <SmsCarriers carriers={schema.smsCarriers} />}
 
       {section.fields.map((field) => (
         <FieldInput key={field.key} field={field}
@@ -91,7 +92,7 @@ export function Install() {
                  onInput={(e) => setDryRun((e.target as HTMLInputElement).checked)} />
           Dry run
         </label>
-        <a href="#/launcher" class="button-link">Cancel</a>
+        <a href={routeHref(Route.LAUNCHER)} class="button-link">Cancel</a>
         <button type="submit" disabled={busy}>{busy ? 'Installing…' : 'Install'}</button>
       </div>
     </form>

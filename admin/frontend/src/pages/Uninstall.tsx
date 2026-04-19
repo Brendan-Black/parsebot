@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 import { api } from '../api';
+import { Route, routeHref } from '../consts';
 
 export function Uninstall() {
   const [busy, setBusy] = useState(false);
@@ -28,7 +29,7 @@ export function Uninstall() {
       {result && <p class="success">{result}</p>}
       {error && <p class="error">{error}</p>}
       <div class="button-row">
-        <a href="#/launcher" class="button-link">Cancel</a>
+        <a href={routeHref(Route.LAUNCHER)} class="button-link">Cancel</a>
         <button type="button" class="danger" disabled={busy} onClick={onClick}>
           {busy ? 'Uninstalling…' : 'Uninstall'}
         </button>

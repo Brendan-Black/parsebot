@@ -1,4 +1,5 @@
 import { Field } from '../api';
+import { FieldType } from '../consts';
 
 interface Props {
   field: Field;
@@ -11,10 +12,10 @@ export function FieldInput({ field, value, onChange }: Props) {
 
   let control;
   switch (field.type) {
-    case 'password':
+    case FieldType.PASSWORD:
       control = <input type="password" value={value} onInput={onInput} />;
       break;
-    case 'boolean':
+    case FieldType.BOOLEAN:
       control = (
         <select value={value} onInput={onInput}>
           <option value="true">Yes</option>
@@ -22,10 +23,10 @@ export function FieldInput({ field, value, onChange }: Props) {
         </select>
       );
       break;
-    case 'time':
+    case FieldType.TIME:
       control = <input type="time" value={value} onInput={onInput} />;
       break;
-    case 'list': {
+    case FieldType.LIST: {
       const onListInput = (e: Event) => {
         const raw = (e.target as HTMLTextAreaElement).value;
         const items = raw
@@ -42,9 +43,9 @@ export function FieldInput({ field, value, onChange }: Props) {
         </div>
       );
     }
-    case 'file':
-    case 'folder':
-    case 'text':
+    case FieldType.FILE:
+    case FieldType.FOLDER:
+    case FieldType.TEXT:
     default:
       control = <input type="text" value={value} onInput={onInput} />;
   }

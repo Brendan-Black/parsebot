@@ -6,50 +6,48 @@ import { Events } from './pages/Events';
 import { Status } from './pages/Status';
 import { TestParse } from './pages/TestParse';
 import { useHeartbeat } from './heartbeat';
-
-type Route = 'launcher' | 'install' | 'uninstall' | 'events' | 'status' | 'test-parse';
+import { LEGACY_UI_ROUTE, Route, isRoute, routeHref } from './consts';
 
 function currentRoute(): Route {
-  const raw = window.location.hash.replace(/^#\/?/, '') || 'launcher';
-  const head = raw.split('/')[0];
-  if (head === 'ui') return 'launcher';
-  if (head === 'install' || head === 'uninstall' || head === 'events'
-      || head === 'status' || head === 'launcher' || head === 'test-parse') {
-    return head;
-  }
-  return 'launcher';
+	const raw = window.location.hash.replace(/^#\/?/, '') || Route.LAUNCHER;
+	const head = raw.split('/')[0];
+	if (head === LEGACY_UI_ROUTE) return Route.LAUNCHER;
+	if (isRoute(head)) return head;
+	return Route.LAUNCHER;
 }
 
 export function App() {
-  const [route, setRoute] = useState<Route>(currentRoute());
-  useHeartbeat();
+	const [route, setRoute] = useState<Route>(currentRoute());
+	useHeartbeat();
 
-  useEffect(() => {
-    const onChange = () => setRoute(currentRoute());
-    window.addEventListener('hashchange', onChange);
-    return () => window.removeEventListener('hashchange', onChange);
-  }, []);
+	useEffect(() => {
+		const onChange = () => setRoute(currentRoute());
+		window.addEventListener('hashchange', onChange);
+		return () => window.removeEventListener('hashchange', onChange);
+	}, []);
 
-  return (
-    <div class="app">
-      <header class="header">
-        <h1>ParseBot Admin</h1>
-        <nav class="nav">
-          <a href="#/launcher" class={route === 'launcher' ? 'active' : ''}>Home</a>
-          <a href="#/install" class={route === 'install' ? 'active' : ''}>Install</a>
-          <a href="#/events" class={route === 'events' ? 'active' : ''}>Events</a>
-          <a href="#/test-parse" class={route === 'test-parse' ? 'active' : ''}>Test Parse</a>
-          <a href="#/status" class={route === 'status' ? 'active' : ''}>Status</a>
-        </nav>
-      </header>
-      <main>
-        {route === 'launcher' && <Launcher />}
-        {route === 'install' && <Install />}
-        {route === 'uninstall' && <Uninstall />}
-        {route === 'events' && <Events />}
-        {route === 'test-parse' && <TestParse />}
-        {route === 'status' && <Status />}
-      </main>
-    </div>
-  );
+	const navClass = (target: Route) => route === target ? 'active' : '';
+
+	return (
+		<div class="app">
+			<header class="header">
+				<h1>ParseBot Admin</h1>
+				<nav class="nav">
+					<a href={routeHref(Route.LAUNCHER)} class={navClass(Route.LAUNCHER)}>Home</a>
+					<a href={routeHref(Route.INSTALL)} class={navClass(Route.INSTALL)}>Install</a>
+					<a href={routeHref(Route.EVENTS)} class={navClass(Route.EVENTS)}>Events</a>
+					<a href={routeHref(Route.TEST_PARSE)} class={navClass(Route.TEST_PARSE)}>Test Parse</a>
+					<a href={routeHref(Route.STATUS)} class={navClass(Route.STATUS)}>Status</a>
+				</nav>
+			</header>
+			<main>
+				{route === Route.LAUNCHER && <Launcher />}
+				{route === Route.INSTALL && <Install />}
+				{route === Route.UNINSTALL && <Uninstall />}
+				{route === Route.EVENTS && <Events />}
+				{route === Route.TEST_PARSE && <TestParse />}
+				{route === Route.STATUS && <Status />}
+			</main>
+		</div>
+	);
 }

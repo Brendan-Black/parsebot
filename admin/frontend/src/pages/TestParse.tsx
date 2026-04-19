@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { api } from '../api';
+import { ConfigKey, Route, routeHref } from '../consts';
 
 interface SourceLabel {
   loaded: boolean;
@@ -27,7 +28,7 @@ export function TestParse() {
   useEffect(() => {
     api.config()
       .then((cfg) => {
-        if (cfg['claude.api.key']) setApiKey(cfg['claude.api.key']);
+        if (cfg[ConfigKey.CLAUDE_API_KEY]) setApiKey(cfg[ConfigKey.CLAUDE_API_KEY]);
       })
       .catch(() => {});
 
@@ -133,7 +134,7 @@ export function TestParse() {
       {error && <p class="error">{error}</p>}
 
       <div class="button-row">
-        <a href="#/launcher" class="button-link">Cancel</a>
+        <a href={routeHref(Route.LAUNCHER)} class="button-link">Cancel</a>
         <button type="submit" disabled={busy || !pdfBase64}>
           {busy ? 'Calling Claude…' : 'Send to Claude'}
         </button>

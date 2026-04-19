@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { api, ApiEvent } from '../api';
+import { ALL_EVENT_TYPES, EventSeverity } from '../consts';
 
 export function Events() {
   const [all, setAll] = useState<ApiEvent[]>([]);
   const [logDir, setLogDir] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [type, setType] = useState('All');
+  const [type, setType] = useState<string>(ALL_EVENT_TYPES);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
 
@@ -33,7 +34,7 @@ export function Events() {
     const fromMs = from ? new Date(from).getTime() : -Infinity;
     const toMs = to ? new Date(to).getTime() : Infinity;
     return all.filter((e) => {
-      if (type !== 'All' && e.type !== type) return false;
+      if (type !== ALL_EVENT_TYPES && e.type !== type) return false;
       const ts = new Date(e.timestamp).getTime();
       return ts >= fromMs && ts <= toMs;
     });
@@ -46,14 +47,14 @@ export function Events() {
       <div class="filters">
         <label>Type:</label>
         <select value={type} onInput={(e) => setType((e.target as HTMLSelectElement).value)}>
-          <option value="All">All</option>
+          <option value={ALL_EVENT_TYPES}>{ALL_EVENT_TYPES}</option>
           {types.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
         <label>From:</label>
         <input type="datetime-local" value={from} onInput={(e) => setFrom((e.target as HTMLInputElement).value)} />
         <label>To:</label>
         <input type="datetime-local" value={to} onInput={(e) => setTo((e.target as HTMLInputElement).value)} />
-        <button type="button" class="secondary" onClick={() => { setType('All'); setFrom(''); setTo(''); }}>Reset</button>
+        <button type="button" class="secondary" onClick={() => { setType(ALL_EVENT_TYPES); setFrom(''); setTo(''); }}>Reset</button>
       </div>
 
       <p class="muted">Logs: {logDir} — Showing {filtered.length} of {all.length} events</p>
@@ -69,7 +70,7 @@ export function Events() {
           </thead>
           <tbody>
             {filtered.map((e) => (
-              <tr key={e.id} class={e.severity === 'CRITICAL' ? 'critical' : ''}>
+              <tr key={e.id} class={e.severity === EventSeverity.CRITICAL ? 'critical' : ''}>
                 <td>{formatTs(e.timestamp)}</td>
                 <td>{e.type}</td>
                 <td>{e.severity}</td>
