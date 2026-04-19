@@ -36,7 +36,8 @@ export const FieldType = {
   FOLDER: 'folder',
   BOOLEAN: 'boolean',
   TIME: 'time',
-  LIST: 'list'
+  LIST: 'list',
+  SELECT: 'select'
 } as const;
 
 export type FieldType = typeof FieldType[keyof typeof FieldType];

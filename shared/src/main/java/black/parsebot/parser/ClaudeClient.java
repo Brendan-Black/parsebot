@@ -111,21 +111,39 @@ public class ClaudeClient {
   private final String apiKey;
   private final HttpClient httpClient;
   private final EventPublisher eventPublisher;
+  private final PdfValidator pdfValidator;
 
-  public ClaudeClient(String apiKey, EventPublisher eventPublisher) {
+  public ClaudeClient(String apiKey, EventPublisher eventPublisher, PdfValidator pdfValidator) {
     this.apiKey = apiKey;
     this.httpClient = HttpClient.newHttpClient();
     this.eventPublisher = eventPublisher;
+    this.pdfValidator = pdfValidator;
   }
 
   public String parsePdf(String filename, byte[] pdfBytes, String customerCsv, String productCsv)
-      throws IOException, InterruptedException {
+      throws IOException, InterruptedException, PdfValidationException {
     return parsePdf(filename, pdfBytes, customerCsv, productCsv, null);
   }
 
   public String parsePdf(String filename, byte[] pdfBytes, String customerCsv, String productCsv,
              String customRules)
-      throws IOException, InterruptedException {
+      throws IOException, InterruptedException, PdfValidationException {
+    try {
+      pdfValidator.validate(filename, pdfBytes);
+    } catch (PdfValidationException e) {
+      log.warn("Skipping Claude API call for '{}': {}", filename, e.getMessage());
+      eventPublisher.publish(Event.create(
+          EventType.PDF_VALIDATION_FAILED,
+          EventSeverity.AUDIT,
+          "PDF validation failed; skipped Claude API call",
+          Map.of(
+              "filename", filename != null ? filename : "<unknown>",
+              "reason", e.getMessage(),
+              "bytes", String.valueOf(pdfBytes == null ? 0 : pdfBytes.length)
+          )));
+      throw e;
+    }
+
     String base64Content = Base64.getEncoder().encodeToString(pdfBytes);
 
     String systemPrompt = (customRules != null && !customRules.isBlank()) ? customRules : SYSTEM_PROMPT;

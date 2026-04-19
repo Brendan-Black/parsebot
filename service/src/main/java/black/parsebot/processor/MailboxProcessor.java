@@ -3,6 +3,7 @@ package black.parsebot.processor;
 import black.parsebot.model.TransformedData;
 import black.parsebot.model.raw.RawMailboxData;
 import black.parsebot.parser.ClaudeClient;
+import black.parsebot.parser.PdfValidationException;
 import black.parsebot.parser.PriceMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +37,7 @@ public class MailboxProcessor {
   /**
   * Processes the email using default rules and product list.
   */
-  public List<TransformedData> process(RawMailboxData raw) throws IOException, InterruptedException {
+  public List<TransformedData> process(RawMailboxData raw) throws IOException, InterruptedException, PdfValidationException {
     return process(raw, null, null);
   }
 
@@ -47,7 +48,7 @@ public class MailboxProcessor {
   * @param customRules      custom system prompt, or null to use default
   * @param customProductCsv custom product list CSV, or null to use default
   */
-  public List<TransformedData> process(RawMailboxData raw, String customRules, String customProductCsv) throws IOException, InterruptedException {
+  public List<TransformedData> process(RawMailboxData raw, String customRules, String customProductCsv) throws IOException, InterruptedException, PdfValidationException {
     log.info("Processing: {} (source: {})", raw.getName(), raw.getClass().getSimpleName());
 
     List<Map.Entry<String, byte[]>> pdfs;

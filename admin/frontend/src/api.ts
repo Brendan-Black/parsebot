@@ -2,11 +2,17 @@ import { ApiPath, EventSeverity, FieldType } from './consts';
 
 export { EventSeverity, FieldType };
 
+export interface FieldOption {
+  value: string;
+  label: string;
+}
+
 export interface Field {
   key: string;
   label: string;
   defaultValue: string;
   type: FieldType;
+  options?: FieldOption[];
 }
 
 export interface Section {

@@ -23,6 +23,8 @@ import black.parsebot.event.EventType;
 import black.parsebot.model.TransformedData;
 import black.parsebot.model.raw.RawMailboxData;
 import black.parsebot.parser.ClaudeClient;
+import black.parsebot.parser.DefaultPdfValidator;
+import black.parsebot.parser.PdfValidator;
 import black.parsebot.processor.MailboxProcessor;
 import black.parsebot.parser.PriceMatrix;
 import black.parsebot.reader.MailboxReader;
@@ -56,7 +58,10 @@ public class ParseBotService {
     this.mailReader = new MailboxReader(config.getMailConfig(), eventBus);
     this.mailWriter = new MailboxWriter(mailReader, eventBus);
 
-    this.claudeClient = new ClaudeClient(config.getClaudeConfig().getApiKey(), eventBus);
+    PdfValidator pdfValidator = new DefaultPdfValidator(
+        config.getClaudeConfig().getPdfMaxBytes(),
+        config.getClaudeConfig().getPdfMaxPages());
+    this.claudeClient = new ClaudeClient(config.getClaudeConfig().getApiKey(), eventBus, pdfValidator);
     ReferenceDataConfig refData = config.getReferenceDataConfig();
     this.customerCsvPath = Path.of(refData.getCustomerCsvPath());
     this.productCsvPath = Path.of(refData.getProductCsvPath());

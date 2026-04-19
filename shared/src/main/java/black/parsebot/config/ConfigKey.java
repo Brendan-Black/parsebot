@@ -14,6 +14,8 @@ public final class ConfigKey {
   public static final String MAIL_PROTOCOL = "mail.protocol";
 
   public static final String CLAUDE_API_KEY = "claude.api.key";
+  public static final String CLAUDE_PDF_MAX_BYTES = "claude.pdf.max.bytes";
+  public static final String CLAUDE_PDF_MAX_PAGES = "claude.pdf.max.pages";
 
   public static final String CSV_CUSTOMERS = "csv.customers";
   public static final String CSV_PRODUCTS = "csv.products";

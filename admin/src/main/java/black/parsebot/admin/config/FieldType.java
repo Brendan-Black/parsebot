@@ -9,5 +9,6 @@ public enum FieldType {
   @SerializedName("folder")   FOLDER,
   @SerializedName("boolean")  BOOLEAN,
   @SerializedName("time")     TIME,
-  @SerializedName("list")     LIST
+  @SerializedName("list")     LIST,
+  @SerializedName("select")   SELECT
 }

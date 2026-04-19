@@ -27,6 +27,15 @@ export function FieldInput({ field, value, onChange }: Props) {
     case FieldType.TIME:
       control = <input type="time" value={value} onInput={onInput} />;
       break;
+    case FieldType.SELECT:
+      control = (
+        <select value={value} onInput={onInput}>
+          {(field.options ?? []).map((o) => (
+            <option value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      );
+      break;
     case FieldType.LIST: {
       const onListInput = (e: Event) => {
         const raw = (e.target as HTMLTextAreaElement).value;

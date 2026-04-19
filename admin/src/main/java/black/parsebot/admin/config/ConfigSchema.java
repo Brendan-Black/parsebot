@@ -11,11 +11,26 @@ public final class ConfigSchema {
   public static final String DESCRIPTION = "ParseBot email parsing service";
   public static final String SERVICE_EXE = "service.exe";
 
-  public record Field(String key, String label, String defaultValue, FieldType type) {}
+  public record Option(String value, String label) {}
+
+  public record Field(String key, String label, String defaultValue, FieldType type, List<Option> options) {
+    public Field(String key, String label, String defaultValue, FieldType type) {
+      this(key, label, defaultValue, type, List.of());
+    }
+  }
 
   public record Section(String title, List<Field> fields, SectionHint hint) {}
 
   public record Carrier(String gateway, String carrier) {}
+
+  private static final List<Option> PDF_MAX_BYTES_OPTIONS = List.of(
+      new Option("1048576",  "1 MB"),
+      new Option("2097152",  "2 MB"),
+      new Option("5242880",  "5 MB"),
+      new Option("10485760", "10 MB"),
+      new Option("20971520", "20 MB"),
+      new Option("33554432", "32 MB")
+  );
 
   public static final List<Carrier> SMS_CARRIERS = List.of(
       new Carrier("#@vtext.com",								 "Verizon"),
@@ -51,7 +66,9 @@ public final class ConfigSchema {
           new Field(ConfigKey.MAIL_PROTOCOL,       "Protocol",       "imaps",     FieldType.TEXT)
       ), null),
       new Section("Claude API", List.of(
-          new Field(ConfigKey.CLAUDE_API_KEY, "API Key", "", FieldType.PASSWORD)
+          new Field(ConfigKey.CLAUDE_API_KEY,       "API Key",       "",         FieldType.PASSWORD),
+          new Field(ConfigKey.CLAUDE_PDF_MAX_BYTES, "Max PDF Size", "10485760",   FieldType.SELECT, PDF_MAX_BYTES_OPTIONS),
+          new Field(ConfigKey.CLAUDE_PDF_MAX_PAGES, "Max PDF Pages", "20",        FieldType.TEXT)
       ), null),
       new Section("Reference Data", List.of(
           new Field(ConfigKey.CSV_CUSTOMERS,           "Customers CSV Path",             "", FieldType.FILE),
