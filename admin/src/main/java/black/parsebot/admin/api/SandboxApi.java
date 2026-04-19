@@ -8,9 +8,9 @@ import black.parsebot.admin.parser.OrderParser;
 import black.parsebot.admin.server.JsonHandler;
 import black.parsebot.parser.PriceMatrix;
 
-public final class TestParseApi {
+public final class SandboxApi {
 
-  public record TestParseRequest(
+  public record SandboxRequest(
       String filename,
       String pdfBase64,
       String customerCsv,
@@ -20,7 +20,7 @@ public final class TestParseApi {
       String priceMatrixCsv
   ) {}
 
-  public record TestParseResponse(String response, long durationMs) {}
+  public record SandboxResponse(String response, long durationMs) {}
 
   public static final class Handler extends JsonHandler {
     private final OrderParser parser;
@@ -34,7 +34,7 @@ public final class TestParseApi {
     @Override
     protected Object handleJson(HttpExchange exchange) throws Exception {
       requireMethod(exchange, "POST");
-      TestParseRequest req = readJson(exchange, TestParseRequest.class);
+      SandboxRequest req = readJson(exchange, SandboxRequest.class);
       if (req == null) throw new HttpException(400, "Missing request body");
       if (requireApiKey && (req.apiKey == null || req.apiKey.isBlank())) {
         throw new HttpException(400, "apiKey is required");
@@ -60,9 +60,9 @@ public final class TestParseApi {
         response = PriceMatrix.load(req.priceMatrixCsv).applyToResponse(response);
       }
 
-      return new TestParseResponse(response, System.currentTimeMillis() - start);
+      return new SandboxResponse(response, System.currentTimeMillis() - start);
     }
   }
 
-  private TestParseApi() {}
+  private SandboxApi() {}
 }

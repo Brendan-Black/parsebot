@@ -97,7 +97,7 @@ export interface EmailPdfFetchResponse {
   pdfBase64: string;
 }
 
-export interface TestParseRequest {
+export interface SandboxRequest {
   filename: string;
   pdfBase64: string;
   customerCsv: string;
@@ -107,7 +107,7 @@ export interface TestParseRequest {
   priceMatrixCsv?: string;
 }
 
-export interface TestParseResponse {
+export interface SandboxResponse {
   response: string;
   durationMs: number;
 }
@@ -153,7 +153,7 @@ export const api = {
   emailPdfs: () => get<EmailPdfsListResponse>(ApiPath.EMAIL_PDFS),
   emailPdf: (message: number, attachment: number) =>
     get<EmailPdfFetchResponse>(`${ApiPath.EMAIL_PDF}?message=${message}&attachment=${attachment}`),
-  testParse: (req: TestParseRequest) => post<TestParseResponse>(ApiPath.TEST_PARSE, req),
+  sandbox: (req: SandboxRequest) => post<SandboxResponse>(ApiPath.SANDBOX, req),
   fileChooser: (mode: FileChooserMode, initialPath: string, title: string) =>
     post<FileChooserResponse>(ApiPath.FILE_CHOOSER, { mode, initialPath, title }),
   readFile: (path: string) => post<FileReadResponse>(ApiPath.FILE_READ, { path }),

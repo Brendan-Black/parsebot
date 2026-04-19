@@ -5,7 +5,7 @@ import { Install } from './pages/Install';
 import { Uninstall } from './pages/Uninstall';
 import { Events } from './pages/Events';
 import { Status } from './pages/Status';
-import { TestParse } from './pages/TestParse';
+import { Sandbox } from './pages/Sandbox';
 import { useHeartbeat } from './heartbeat';
 import { LEGACY_UI_ROUTE, Route, isRoute, routeHref } from './consts';
 
@@ -49,7 +49,7 @@ export function App() {
 					<a href={routeHref(Route.LAUNCHER)} class={navClass(Route.LAUNCHER)}>Home</a>
 					<a href={routeHref(Route.INSTALL)} class={navClass(Route.INSTALL)}>Install</a>
 					<a href={routeHref(Route.EVENTS)} class={navClass(Route.EVENTS)}>Events</a>
-					<a href={routeHref(Route.TEST_PARSE)} class={navClass(Route.TEST_PARSE)}>Test Parse</a>
+					<a href={routeHref(Route.SANDBOX)} class={navClass(Route.SANDBOX)}>Sandbox</a>
 					<a href={routeHref(Route.STATUS)} class={navClass(Route.STATUS)}>Status</a>
 				</nav>
 			</header>
@@ -58,7 +58,7 @@ export function App() {
 				{route === Route.INSTALL && <Install />}
 				{route === Route.UNINSTALL && <Uninstall />}
 				{route === Route.EVENTS && <Events />}
-				{route === Route.TEST_PARSE && <TestParse />}
+				{route === Route.SANDBOX && <Sandbox />}
 				{route === Route.STATUS && <Status />}
 			</main>
 		</div>

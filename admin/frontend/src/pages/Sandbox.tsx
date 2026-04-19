@@ -13,7 +13,7 @@ interface EmailPdfPick {
   attachment: number;
 }
 
-export function TestParse() {
+export function Sandbox() {
   const [pdfPath, setPdfPath] = useState('');
   const [filename, setFilename] = useState('');
   const [pdfBase64, setPdfBase64] = useState('');
@@ -125,7 +125,7 @@ export function TestParse() {
     setResponse(null);
     setDurationMs(null);
     try {
-      const r = await api.testParse({
+      const r = await api.sandbox({
         filename,
         pdfBase64,
         customerCsv,
@@ -145,7 +145,7 @@ export function TestParse() {
 
   return (
     <form class="card" onSubmit={onSubmit}>
-      <h2>Test Parse</h2>
+      <h2>Sandbox</h2>
       <p class="muted">
         Upload a PDF and send it through the Claude translation pipeline with the given customer and product CSVs.
         Uses the service's configured API key by default.

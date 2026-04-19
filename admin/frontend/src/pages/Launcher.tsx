@@ -15,8 +15,8 @@ export function Launcher() {
         <strong>Events</strong>
         <span>View events emitted by the service.</span>
       </a>
-      <a href={routeHref(Route.TEST_PARSE)}>
-        <strong>Test Parse</strong>
+      <a href={routeHref(Route.SANDBOX)}>
+        <strong>Sandbox</strong>
         <span>Send a PDF through Claude interactively.</span>
       </a>
       <a href={routeHref(Route.STATUS)}>

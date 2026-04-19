@@ -4,7 +4,7 @@ export const Route = {
   UNINSTALL: 'uninstall',
   EVENTS: 'events',
   STATUS: 'status',
-  TEST_PARSE: 'test-parse'
+  SANDBOX: 'sandbox'
 } as const;
 
 export type Route = typeof Route[keyof typeof Route];
@@ -62,7 +62,7 @@ export const ApiPath = {
   EMAIL_PDFS: '/api/email-pdfs',
   EMAIL_PDF: '/api/email-pdf',
   MODE: '/api/mode',
-  TEST_PARSE: '/api/test-parse',
+  SANDBOX: '/api/sandbox',
   FILE_CHOOSER: '/api/file-chooser',
   FILE_READ: '/api/file-read',
   HEARTBEAT: '/api/heartbeat',

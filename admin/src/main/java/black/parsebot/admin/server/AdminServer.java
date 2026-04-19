@@ -20,7 +20,7 @@ import black.parsebot.admin.api.ModeApi;
 import black.parsebot.admin.api.ReferenceDataApi;
 import black.parsebot.admin.api.ServiceApi;
 import black.parsebot.admin.api.ShutdownApi;
-import black.parsebot.admin.api.TestParseApi;
+import black.parsebot.admin.api.SandboxApi;
 
 public final class AdminServer {
 
@@ -51,7 +51,7 @@ public final class AdminServer {
     httpServer.createContext("/api/reference-data", new ReferenceDataApi.Handler(context.referenceData()));
     httpServer.createContext("/api/email-pdfs", new MailboxPdfsApi.ListHandler(context.mailboxPdfs()));
     httpServer.createContext("/api/email-pdf", new MailboxPdfsApi.FetchHandler(context.mailboxPdfs()));
-    httpServer.createContext("/api/test-parse", new TestParseApi.Handler(context.orderParser(), !context.demoMode()));
+    httpServer.createContext("/api/sandbox", new SandboxApi.Handler(context.orderParser(), !context.demoMode()));
     httpServer.createContext("/api/heartbeat", new HeartbeatApi.Handler(this));
     httpServer.createContext("/api/shutdown", new ShutdownApi.Handler(this));
     httpServer.createContext("/api/mode", new ModeApi.Handler(context));
