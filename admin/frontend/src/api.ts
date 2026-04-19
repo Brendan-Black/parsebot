@@ -63,6 +63,18 @@ export interface EventsResponse {
   events: ApiEvent[];
 }
 
+export interface ReferenceFile {
+  path: string;
+  content: string | null;
+  error: string | null;
+}
+
+export interface ReferenceDataResponse {
+  customers: ReferenceFile | null;
+  products: ReferenceFile | null;
+  priceMatrix: ReferenceFile | null;
+}
+
 export interface TestParseRequest {
   filename: string;
   pdfBase64: string;
@@ -102,6 +114,7 @@ export const api = {
   uninstall: () => post<UninstallResult>('/api/service/uninstall', {}),
   status: () => get<ServiceStatus>('/api/service/status'),
   events: () => get<EventsResponse>('/api/events'),
+  referenceData: () => get<ReferenceDataResponse>('/api/reference-data'),
   testParse: (req: TestParseRequest) => post<TestParseResponse>('/api/test-parse', req),
   heartbeat: () => post<{ ok: boolean }>('/api/heartbeat', {}),
   shutdown: () => post<{ ok: boolean }>('/api/shutdown', {})

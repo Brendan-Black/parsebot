@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import black.parsebot.admin.api.ConfigApi;
 import black.parsebot.admin.api.EventsApi;
 import black.parsebot.admin.api.HeartbeatApi;
+import black.parsebot.admin.api.ReferenceDataApi;
 import black.parsebot.admin.api.ServiceApi;
 import black.parsebot.admin.api.ShutdownApi;
 import black.parsebot.admin.api.TestParseApi;
@@ -46,6 +47,7 @@ public final class AdminServer {
     httpServer.createContext("/api/service/uninstall", new ServiceApi.UninstallHandler(serviceManager));
     httpServer.createContext("/api/service/status", new ServiceApi.StatusHandler(serviceManager));
     httpServer.createContext("/api/events", new EventsApi.EventsHandler(logDir));
+    httpServer.createContext("/api/reference-data", new ReferenceDataApi.Handler(serviceManager));
     httpServer.createContext("/api/test-parse", new TestParseApi.Handler());
     httpServer.createContext("/api/heartbeat", new HeartbeatApi.Handler(this));
     httpServer.createContext("/api/shutdown", new ShutdownApi.Handler(this));

@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'preact/hooks';
 import { api } from '../api';
 
+interface SourceLabel {
+  loaded: boolean;
+  path: string | null;
+  error: string | null;
+}
+
 export function TestParse() {
   const [filename, setFilename] = useState('');
   const [pdfBase64, setPdfBase64] = useState('');
@@ -10,6 +16,9 @@ export function TestParse() {
   const [apiKey, setApiKey] = useState('');
   const [customRules, setCustomRules] = useState('');
   const [priceMatrixCsv, setPriceMatrixCsv] = useState('');
+  const [customerSource, setCustomerSource] = useState<SourceLabel | null>(null);
+  const [productSource, setProductSource] = useState<SourceLabel | null>(null);
+  const [priceMatrixSource, setPriceMatrixSource] = useState<SourceLabel | null>(null);
   const [busy, setBusy] = useState(false);
   const [response, setResponse] = useState<string | null>(null);
   const [durationMs, setDurationMs] = useState<number | null>(null);
@@ -19,6 +28,23 @@ export function TestParse() {
     api.config()
       .then((cfg) => {
         if (cfg['claude.api.key']) setApiKey(cfg['claude.api.key']);
+      })
+      .catch(() => {});
+
+    api.referenceData()
+      .then((r) => {
+        if (r.customers) {
+          setCustomerSource({ loaded: r.customers.content !== null, path: r.customers.path, error: r.customers.error });
+          if (r.customers.content) setCustomerCsv(r.customers.content);
+        }
+        if (r.products) {
+          setProductSource({ loaded: r.products.content !== null, path: r.products.path, error: r.products.error });
+          if (r.products.content) setProductCsv(r.products.content);
+        }
+        if (r.priceMatrix) {
+          setPriceMatrixSource({ loaded: r.priceMatrix.content !== null, path: r.priceMatrix.path, error: r.priceMatrix.error });
+          if (r.priceMatrix.content) setPriceMatrixCsv(r.priceMatrix.content);
+        }
       })
       .catch(() => {});
   }, []);
@@ -81,13 +107,13 @@ export function TestParse() {
       </div>
 
       <div class="field multiline">
-        <label>Customer CSV:</label>
+        <label>Customer CSV:{renderSourceLabel(customerSource)}</label>
         <textarea rows={4} value={customerCsv}
                   onInput={(e) => setCustomerCsv((e.target as HTMLTextAreaElement).value)} />
       </div>
 
       <div class="field multiline">
-        <label>Product CSV:</label>
+        <label>Product CSV:{renderSourceLabel(productSource)}</label>
         <textarea rows={4} value={productCsv}
                   onInput={(e) => setProductCsv((e.target as HTMLTextAreaElement).value)} />
       </div>
@@ -99,7 +125,7 @@ export function TestParse() {
       </div>
 
       <div class="field multiline">
-        <label>Price Matrix CSV (optional):</label>
+        <label>Price Matrix CSV (optional):{renderSourceLabel(priceMatrixSource)}</label>
         <textarea rows={3} value={priceMatrixCsv}
                   onInput={(e) => setPriceMatrixCsv((e.target as HTMLTextAreaElement).value)} />
       </div>
@@ -128,6 +154,15 @@ export function TestParse() {
       )}
     </form>
   );
+}
+
+function renderSourceLabel(source: SourceLabel | null) {
+  if (!source) return null;
+  const color = source.loaded ? '#3e8e3e' : '#b34c4c';
+  const text = source.loaded
+    ? `loaded from ${source.path}`
+    : source.error ?? 'not loaded';
+  return <span style={{ color, fontSize: 12, marginLeft: 6 }}>({text})</span>;
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
