@@ -124,20 +124,71 @@ export interface FileReadResponse {
   sizeBytes: number;
 }
 
-async function get<T>(path: string): Promise<T> {
-  const r = await fetch(path);
-  if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
-  return r.json() as Promise<T>;
+export class ApiError extends Error {
+  constructor(message: string, readonly status: number | null, readonly path: string) {
+    super(message);
+    this.name = 'ApiError';
+  }
+  toString(): string {
+    return this.message;
+  }
 }
 
-async function post<T>(path: string, body: unknown): Promise<T> {
-  const r = await fetch(path, {
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  let r: Response;
+  try {
+    r = await fetch(path, init);
+  } catch (e) {
+    throw new ApiError(
+      `Could not reach ParseBot admin service at ${path} (${describeNetworkError(e)})`,
+      null,
+      path
+    );
+  }
+  if (!r.ok) {
+    const body = await safeReadText(r);
+    throw new ApiError(
+      `${r.status} ${r.statusText || ''}`.trim() + (body ? `: ${body}` : '') + ` [${path}]`,
+      r.status,
+      path
+    );
+  }
+  try {
+    return await r.json() as T;
+  } catch (e) {
+    throw new ApiError(
+      `Invalid JSON response from ${path}: ${e instanceof Error ? e.message : String(e)}`,
+      r.status,
+      path
+    );
+  }
+}
+
+async function safeReadText(r: Response): Promise<string> {
+  try {
+    const text = (await r.text()).trim();
+    return text.length > 500 ? text.slice(0, 500) + '…' : text;
+  } catch {
+    return '';
+  }
+}
+
+function describeNetworkError(e: unknown): string {
+  if (e instanceof TypeError) return 'service may be stopped or unreachable';
+  if (e instanceof Error) return e.message;
+  return String(e);
+}
+
+function get<T>(path: string): Promise<T> {
+  return request<T>(path);
+}
+
+function post<T>(path: string, body: unknown): Promise<T> {
+  return request<T>(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
-  if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
-  return r.json() as Promise<T>;
 }
 
 export const api = {
