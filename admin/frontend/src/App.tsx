@@ -35,7 +35,7 @@ export function App() {
 		<div class="app">
 			{!connected && (
 				<div class="connection-lost-banner" role="alert">
-					Connection to ParseBot admin service lost -- Attempting to Reconnect
+					Connection to ParseBot admin service lost
 				</div>
 			)}
 			{demo && (
