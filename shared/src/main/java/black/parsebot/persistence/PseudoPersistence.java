@@ -1,9 +1,9 @@
-package black.parsebot.storage;
+package black.parsebot.persistence;
 
 import java.io.IOException;
 import java.util.List;
 
-public interface Storage<T> {
+public interface PseudoPersistence<T> {
 
   void append(T item);
 

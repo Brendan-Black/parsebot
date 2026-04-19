@@ -21,6 +21,7 @@ public class AppConfig {
   private final SftpConfig sftpConfig;
   private final EventsConfig eventsConfig;
   private final NotifyConfig notifyConfig;
+  private final PersistenceConfig persistenceConfig;
 
   private AppConfig(Properties props) {
     this.generalConfig = new GeneralConfig(props);
@@ -30,6 +31,7 @@ public class AppConfig {
     this.sftpConfig = new SftpConfig(props);
     this.eventsConfig = new EventsConfig(props);
     this.notifyConfig = new NotifyConfig(props);
+    this.persistenceConfig = new PersistenceConfig(props);
   }
 
   public static AppConfig load() {
@@ -95,5 +97,9 @@ public class AppConfig {
 
   public NotifyConfig getNotifyConfig() {
     return notifyConfig;
+  }
+
+  public PersistenceConfig getPersistenceConfig() {
+    return persistenceConfig;
   }
 }

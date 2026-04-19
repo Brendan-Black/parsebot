@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import black.parsebot.config.AppConfig;
 import black.parsebot.config.EventsConfig;
 import black.parsebot.config.NotifyConfig;
+import black.parsebot.config.PersistenceConfig;
 import black.parsebot.event.Event;
 import black.parsebot.event.EventBus;
 import black.parsebot.event.ReportCardScheduler;
@@ -21,9 +22,11 @@ import black.parsebot.notify.NotificationChannel;
 import black.parsebot.notify.NotificationDispatcher;
 import black.parsebot.notify.SmtpChannel;
 import black.parsebot.notify.TeamsWebhookChannel;
+import black.parsebot.persistence.JsonFileProcessingHistoryRepository;
+import black.parsebot.persistence.ProcessingHistoryRepository;
+import black.parsebot.persistence.PseudoPersistence;
+import black.parsebot.persistence.Slf4jPseudoPersistence;
 import black.parsebot.service.ParseBotService;
-import black.parsebot.storage.Slf4jStorage;
-import black.parsebot.storage.Storage;
 
 public class Main {
 
@@ -59,13 +62,18 @@ public class Main {
       log.info("Teams webhook notification channel enabled");
     }
 
-    Storage<Event> eventStorage = new Slf4jStorage<>(Event.class, "EVENT: ", Path.of("logs"), "parsebot*.log");
+    PseudoPersistence<Event> eventStorage = new Slf4jPseudoPersistence<>(Event.class, "EVENT: ", Path.of("logs"), "parsebot*.log");
     NotificationDispatcher dispatcher = new NotificationDispatcher(criticalChannels, infoChannels, eventStorage);
     EventBus eventBus = new EventBus(eventStorage, dispatcher);
 
+    PersistenceConfig persistenceConfig = config.getPersistenceConfig();
+    ProcessingHistoryRepository processingHistory = new JsonFileProcessingHistoryRepository(
+        persistenceConfig.getStateDir().resolve("processing-history.json"),
+        persistenceConfig.getHistoryPerEmail());
+
     ParseBotService service;
     try {
-      service = new ParseBotService(config, eventBus);
+      service = new ParseBotService(config, eventBus, processingHistory);
     } catch (IOException e) {
       log.error("Failed to initialize ParseBotService", e);
       return;

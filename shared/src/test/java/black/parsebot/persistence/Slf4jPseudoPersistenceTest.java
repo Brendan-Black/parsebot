@@ -1,4 +1,4 @@
-package black.parsebot.storage;
+package black.parsebot.persistence;
 
 import black.parsebot.event.Event;
 import black.parsebot.event.EventSeverity;
@@ -16,15 +16,15 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class Slf4jStorageTest {
+class Slf4jPseudoPersistenceTest {
 
   private static final String EVT1 = """
       2026-04-17 08:00:00 INFO - EVENT: {"id":"id-1","type":"CONSECUTIVE_FAILURES","severity":"CRITICAL","timestamp":"2026-04-17T08:00:00Z","message":"3 failures","details":{"k":"v"}}""";
   private static final String EVT2 = """
       2026-04-17 09:00:00 INFO - EVENT: {"id":"id-2","type":"REPORT_CARD","severity":"INFO","timestamp":"2026-04-17T09:00:00Z","message":"all good","details":{}}""";
 
-  private static Storage<Event> storage(Path dir) {
-    return new Slf4jStorage<>(Event.class, "EVENT: ", dir, "parsebot*.log");
+  private static PseudoPersistence<Event> storage(Path dir) {
+    return new Slf4jPseudoPersistence<>(Event.class, "EVENT: ", dir, "parsebot*.log");
   }
 
   @Test
@@ -144,12 +144,9 @@ class Slf4jStorageTest {
 
   @Test
   void appendThenReadAllRoundTrips(@TempDir Path tmp) throws IOException {
-    // Write directly to a file using the same marker format the SLF4J appender would produce.
     Event e = Event.create(EventType.REPORT_CARD, EventSeverity.INFO, "hello", Map.of("k", "v"));
-    Storage<Event> s = storage(tmp);
+    PseudoPersistence<Event> s = storage(tmp);
 
-    // Simulate what the appender emits by writing the marker line ourselves —
-    // append() goes through SLF4J which isn't configured in this test scope.
     Files.writeString(tmp.resolve("parsebot.log"),
         "2026-04-17 09:00:00 INFO - EVENT: " + new com.google.gson.GsonBuilder()
             .registerTypeAdapter(Instant.class, (com.google.gson.JsonSerializer<Instant>) (src, t, ctx) ->

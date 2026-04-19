@@ -6,16 +6,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import black.parsebot.notify.NotificationDispatcher;
-import black.parsebot.storage.Storage;
+import black.parsebot.persistence.PseudoPersistence;
 
 public class EventBus implements EventPublisher {
 
   private static final Logger log = LoggerFactory.getLogger(EventBus.class);
 
-  private final Storage<Event> storage;
+  private final PseudoPersistence<Event> storage;
   private final NotificationDispatcher dispatcher;
 
-  public EventBus(Storage<Event> storage, NotificationDispatcher dispatcher) {
+  public EventBus(PseudoPersistence<Event> storage, NotificationDispatcher dispatcher) {
     this.storage = storage;
     this.dispatcher = dispatcher;
   }

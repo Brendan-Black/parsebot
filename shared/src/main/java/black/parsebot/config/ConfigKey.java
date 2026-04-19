@@ -34,6 +34,9 @@ public final class ConfigKey {
   public static final String EVENTS_CONSECUTIVE_FAILURE_THRESHOLD = "events.consecutive.failure.threshold";
   public static final String EVENTS_REPORT_TIME = "events.report.time";
 
+  public static final String PERSISTENCE_STATE_DIR = "persistence.state.dir";
+  public static final String PERSISTENCE_HISTORY_PER_EMAIL = "persistence.history.per.email";
+
   public static final String NOTIFY_SMTP_ENABLED = "notify.smtp.enabled";
   public static final String NOTIFY_SMTP_HOST = "notify.smtp.host";
   public static final String NOTIFY_SMTP_PORT = "notify.smtp.port";

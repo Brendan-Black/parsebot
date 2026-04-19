@@ -2,7 +2,7 @@ package black.parsebot.event;
 
 import black.parsebot.config.TestConfigs;
 import black.parsebot.notify.NotificationDispatcher;
-import black.parsebot.storage.Storage;
+import black.parsebot.persistence.PseudoPersistence;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalTime;
@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ReportCardSchedulerTest {
 
-  private static class NoopStorage implements Storage<Event> {
+  private static class NoopStorage implements PseudoPersistence<Event> {
     @Override public void append(Event item) {}
     @Override public List<Event> readAll() { return List.of(); }
     @Override public List<Event> readLast(int n) { return List.of(); }

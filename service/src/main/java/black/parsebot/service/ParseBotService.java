@@ -15,7 +15,6 @@ import black.parsebot.config.AppConfig;
 import black.parsebot.config.CustomOverrideResolver;
 import black.parsebot.config.MailConfig;
 import black.parsebot.config.ReferenceDataConfig;
-import black.parsebot.event.ConsecutiveFailureDetector;
 import black.parsebot.event.Event;
 import black.parsebot.event.EventBus;
 import black.parsebot.event.EventSeverity;
@@ -25,6 +24,7 @@ import black.parsebot.model.raw.RawMailboxData;
 import black.parsebot.parser.ClaudeClient;
 import black.parsebot.parser.DefaultPdfValidator;
 import black.parsebot.parser.PdfValidator;
+import black.parsebot.persistence.ProcessingHistoryRepository;
 import black.parsebot.processor.MailboxProcessor;
 import black.parsebot.parser.PriceMatrix;
 import black.parsebot.reader.MailboxReader;
@@ -44,16 +44,22 @@ public class ParseBotService {
   private final Path productCsvPath;
   private final CustomOverrideResolver overrideResolver;
   private final AppConfig config;
-  private final ConsecutiveFailureDetector failureDetector;
   private final EventBus eventBus;
+  private final ProcessingHistoryRepository processingHistory;
+  private final int historyPerEmail;
+  private final int consecutiveFailureThreshold;
 
   // Cumulative counters for report card — reset by ReportCardScheduler
   private final AtomicInteger totalSuccessCount = new AtomicInteger();
   private final AtomicInteger totalFailCount = new AtomicInteger();
 
-  public ParseBotService(AppConfig config, EventBus eventBus) throws IOException {
+  public ParseBotService(AppConfig config, EventBus eventBus,
+                         ProcessingHistoryRepository processingHistory) throws IOException {
     this.config = config;
     this.eventBus = eventBus;
+    this.processingHistory = processingHistory;
+    this.historyPerEmail = config.getPersistenceConfig().getHistoryPerEmail();
+    this.consecutiveFailureThreshold = config.getEventsConfig().getConsecutiveFailureThreshold();
     this.mailConfig = config.getMailConfig();
     this.mailReader = new MailboxReader(config.getMailConfig(), eventBus);
     this.mailWriter = new MailboxWriter(mailReader, eventBus);
@@ -68,7 +74,6 @@ public class ParseBotService {
     this.overrideResolver = new CustomOverrideResolver(refData.getCustomRulesDir(), refData.getCustomProductListsDir());
 
     this.sftpWriter = new SftpWriter(config.getSftpConfig(), eventBus);
-    this.failureDetector = new ConsecutiveFailureDetector(config.getEventsConfig().getConsecutiveFailureThreshold(), eventBus);
   }
 
   public AtomicInteger getTotalSuccessCount() {
@@ -97,7 +102,9 @@ public class ParseBotService {
         }
       }
 
-      MailboxProcessor processor = new MailboxProcessor(claudeClient, customerCsv, productCsv, priceMatrix);
+      MailboxProcessor processor = new MailboxProcessor(
+          claudeClient, customerCsv, productCsv, priceMatrix,
+          processingHistory, historyPerEmail, consecutiveFailureThreshold, eventBus);
 
       // Collect raw data from all sources
       List<RawMailboxData> rawData = new ArrayList<>();
@@ -129,7 +136,6 @@ public class ParseBotService {
           onSuccess(email, mailWriter);
           successCount++;
           totalSuccessCount.incrementAndGet();
-          failureDetector.recordSuccess();
         } catch (Exception e) {
           log.error("Failed to process: {}", email.getName(), e);
           eventBus.publish(Event.create(
@@ -144,7 +150,6 @@ public class ParseBotService {
           onFailure(email, mailWriter);
           failCount++;
           totalFailCount.incrementAndGet();
-          failureDetector.recordFailure(email.getName(), e.getMessage());
         }
       }
 

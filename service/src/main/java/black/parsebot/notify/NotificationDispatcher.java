@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import black.parsebot.event.Event;
 import black.parsebot.event.EventSeverity;
 import black.parsebot.event.EventType;
-import black.parsebot.storage.Storage;
+import black.parsebot.persistence.PseudoPersistence;
 
 public class NotificationDispatcher {
 
@@ -17,11 +17,11 @@ public class NotificationDispatcher {
 
   private final List<NotificationChannel> criticalChannels;
   private final List<NotificationChannel> infoChannels;
-  private final Storage<Event> storage;
+  private final PseudoPersistence<Event> storage;
 
   public NotificationDispatcher(List<NotificationChannel> criticalChannels,
                  List<NotificationChannel> infoChannels,
-                 Storage<Event> storage) {
+                 PseudoPersistence<Event> storage) {
     this.criticalChannels = criticalChannels;
     this.infoChannels = infoChannels;
     this.storage = storage;

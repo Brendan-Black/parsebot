@@ -1,4 +1,4 @@
-package black.parsebot.storage;
+package black.parsebot.persistence;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -18,9 +18,9 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializer;
 
-public final class Slf4jStorage<T> implements Storage<T> {
+public final class Slf4jPseudoPersistence<T> implements PseudoPersistence<T> {
 
-  private static final Logger log = LoggerFactory.getLogger(Slf4jStorage.class);
+  private static final Logger log = LoggerFactory.getLogger(Slf4jPseudoPersistence.class);
 
   private final Class<T> type;
   private final String marker;
@@ -28,7 +28,7 @@ public final class Slf4jStorage<T> implements Storage<T> {
   private final String logGlob;
   private final Gson gson;
 
-  public Slf4jStorage(Class<T> type, String marker, Path logDir, String logGlob) {
+  public Slf4jPseudoPersistence(Class<T> type, String marker, Path logDir, String logGlob) {
     this.type = type;
     this.marker = marker;
     this.logDir = logDir;

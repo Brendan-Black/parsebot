@@ -89,6 +89,10 @@ public final class ConfigSchema {
           new Field(ConfigKey.EVENTS_CONSECUTIVE_FAILURE_THRESHOLD, "Consecutive Failure Threshold", "3",     FieldType.TEXT),
           new Field(ConfigKey.EVENTS_REPORT_TIME,                   "Report Time",                   "08:00", FieldType.TIME)
       ), null),
+      new Section("Persistence", List.of(
+          new Field(ConfigKey.PERSISTENCE_STATE_DIR,         "State Directory",   "state", FieldType.FOLDER),
+          new Field(ConfigKey.PERSISTENCE_HISTORY_PER_EMAIL, "History Per Email", "10",    FieldType.TEXT)
+      ), null),
       new Section("Notifications - Email (SMTP)", List.of(
           new Field(ConfigKey.NOTIFY_SMTP_ENABLED,   "Enabled",             "false", FieldType.BOOLEAN),
           new Field(ConfigKey.NOTIFY_SMTP_TO,        "Notification Recipients",        "",      FieldType.LIST),

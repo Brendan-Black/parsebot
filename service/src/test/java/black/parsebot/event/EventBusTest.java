@@ -2,7 +2,7 @@ package black.parsebot.event;
 
 import black.parsebot.notify.NotificationChannel;
 import black.parsebot.notify.NotificationDispatcher;
-import black.parsebot.storage.Storage;
+import black.parsebot.persistence.PseudoPersistence;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class EventBusTest {
 
-  private static class CapturingStorage implements Storage<Event> {
+  private static class CapturingStorage implements PseudoPersistence<Event> {
     final List<Event> appended = new ArrayList<>();
     @Override public void append(Event item) { appended.add(item); }
     @Override public List<Event> readAll() { return appended; }

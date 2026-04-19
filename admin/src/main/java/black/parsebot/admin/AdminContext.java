@@ -18,7 +18,7 @@ import black.parsebot.admin.source.FileReferenceDataSource;
 import black.parsebot.admin.source.ImapMailboxPdfSource;
 import black.parsebot.admin.source.MailboxPdfSource;
 import black.parsebot.admin.source.ReferenceDataSource;
-import black.parsebot.admin.source.Slf4jEventsSource;
+import black.parsebot.admin.source.Slf4jPseudoEventsSource;
 import black.parsebot.admin.source.SwingFileChooser;
 
 public record AdminContext(
@@ -41,7 +41,7 @@ public record AdminContext(
         false,
         sm,
         new FileReferenceDataSource(sm),
-        new Slf4jEventsSource(logDir),
+        new Slf4jPseudoEventsSource(logDir),
         new ImapMailboxPdfSource(sm),
         new ClaudeApiOrderParser(),
         new SwingFileChooser());

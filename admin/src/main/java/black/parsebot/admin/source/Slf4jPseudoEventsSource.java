@@ -7,14 +7,14 @@ import java.util.List;
 
 import black.parsebot.admin.api.EventsApi.EventsResponse;
 import black.parsebot.event.Event;
-import black.parsebot.storage.Slf4jStorage;
-import black.parsebot.storage.Storage;
+import black.parsebot.persistence.PseudoPersistence;
+import black.parsebot.persistence.Slf4jPseudoPersistence;
 
-public final class Slf4jEventsSource implements EventsSource {
+public final class Slf4jPseudoEventsSource implements EventsSource {
 
   private final Path logDir;
 
-  public Slf4jEventsSource(Path logDir) {
+  public Slf4jPseudoEventsSource(Path logDir) {
     this.logDir = logDir;
   }
 
@@ -23,7 +23,7 @@ public final class Slf4jEventsSource implements EventsSource {
     if (!Files.isDirectory(logDir)) {
       return new EventsResponse(logDir.toString(), Collections.emptyList());
     }
-    Storage<Event> storage = new Slf4jStorage<>(Event.class, "EVENT: ", logDir, "parsebot*.log");
+    PseudoPersistence<Event> storage = new Slf4jPseudoPersistence<>(Event.class, "EVENT: ", logDir, "parsebot*.log");
     try {
       List<Event> events = storage.readAll();
       Collections.reverse(events);
