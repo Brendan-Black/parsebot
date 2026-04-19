@@ -14,9 +14,11 @@ interface EmailPdfPick {
 }
 
 export function TestParse() {
+  const [pdfPath, setPdfPath] = useState('');
   const [filename, setFilename] = useState('');
   const [pdfBase64, setPdfBase64] = useState('');
   const [pdfBytes, setPdfBytes] = useState(0);
+  const [pdfBrowsing, setPdfBrowsing] = useState(false);
   const [customerCsv, setCustomerCsv] = useState('');
   const [productCsv, setProductCsv] = useState('');
   const [apiKey, setApiKey] = useState('');
@@ -70,16 +72,23 @@ export function TestParse() {
       });
   }, []);
 
-  const onFile = async (e: Event) => {
-    const input = e.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    setEmailPick(null);
-    setFilename(file.name);
-    const buf = await file.arrayBuffer();
-    const bytes = new Uint8Array(buf);
-    setPdfBytes(bytes.length);
-    setPdfBase64(bytesToBase64(bytes));
+  const onBrowsePdf = async () => {
+    setPdfBrowsing(true);
+    setError(null);
+    try {
+      const chosen = await api.fileChooser('file', pdfPath, 'Select PDF');
+      if (!chosen.path) return;
+      const read = await api.readFile(chosen.path);
+      setEmailPick(null);
+      setPdfPath(chosen.path);
+      setFilename(read.filename);
+      setPdfBytes(read.sizeBytes);
+      setPdfBase64(read.base64);
+    } catch (err) {
+      setError(`Failed to read PDF: ${err}`);
+    } finally {
+      setPdfBrowsing(false);
+    }
   };
 
   const onEmailSelect = async (e: Event) => {
@@ -95,6 +104,7 @@ export function TestParse() {
     setError(null);
     try {
       const r = await api.emailPdf(pick.message, pick.attachment);
+      setPdfPath('');
       setFilename(r.filename);
       const bytes = base64ToBytes(r.pdfBase64);
       setPdfBytes(bytes.length);
@@ -165,7 +175,12 @@ export function TestParse() {
 
       <div class="field">
         <label>PDF:</label>
-        <input type="file" accept="application/pdf" onChange={onFile} />
+        <div class="path-picker">
+          <input type="text" value={pdfPath} readonly placeholder="(no file selected)" />
+          <button type="button" onClick={onBrowsePdf} disabled={pdfBrowsing}>
+            {pdfBrowsing ? '…' : 'Browse…'}
+          </button>
+        </div>
       </div>
       {filename && <p class="muted">{filename} ({pdfBytes.toLocaleString()} bytes)</p>}
 
@@ -232,15 +247,6 @@ function renderSourceLabel(source: SourceLabel | null) {
     ? `loaded from ${source.path}`
     : source.error ?? 'not loaded';
   return <span style={{ color, fontSize: 12, marginLeft: 6 }}>({text})</span>;
-}
-
-function bytesToBase64(bytes: Uint8Array): string {
-  const chunk = 0x8000;
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
-  }
-  return btoa(binary);
 }
 
 function base64ToBytes(b64: string): Uint8Array {

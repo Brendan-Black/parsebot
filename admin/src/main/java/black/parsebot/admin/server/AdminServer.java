@@ -13,6 +13,7 @@ import black.parsebot.admin.AdminContext;
 import black.parsebot.admin.api.ConfigApi;
 import black.parsebot.admin.api.EventsApi;
 import black.parsebot.admin.api.FileChooserApi;
+import black.parsebot.admin.api.FileReaderApi;
 import black.parsebot.admin.api.HeartbeatApi;
 import black.parsebot.admin.api.MailboxPdfsApi;
 import black.parsebot.admin.api.ModeApi;
@@ -55,6 +56,7 @@ public final class AdminServer {
     httpServer.createContext("/api/shutdown", new ShutdownApi.Handler(this));
     httpServer.createContext("/api/mode", new ModeApi.Handler(context));
     httpServer.createContext("/api/file-chooser", new FileChooserApi.Handler(context.fileChooser()));
+    httpServer.createContext("/api/file-read", new FileReaderApi.Handler());
     httpServer.createContext("/", new StaticHandler());
     httpServer.setExecutor(null);
     httpServer.start();

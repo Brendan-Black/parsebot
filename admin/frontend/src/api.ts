@@ -118,6 +118,12 @@ export interface FileChooserResponse {
   path: string | null;
 }
 
+export interface FileReadResponse {
+  filename: string;
+  base64: string;
+  sizeBytes: number;
+}
+
 async function get<T>(path: string): Promise<T> {
   const r = await fetch(path);
   if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
@@ -150,6 +156,7 @@ export const api = {
   testParse: (req: TestParseRequest) => post<TestParseResponse>(ApiPath.TEST_PARSE, req),
   fileChooser: (mode: FileChooserMode, initialPath: string, title: string) =>
     post<FileChooserResponse>(ApiPath.FILE_CHOOSER, { mode, initialPath, title }),
+  readFile: (path: string) => post<FileReadResponse>(ApiPath.FILE_READ, { path }),
   heartbeat: () => post<{ ok: boolean }>(ApiPath.HEARTBEAT, {}),
   shutdown: () => post<{ ok: boolean }>(ApiPath.SHUTDOWN, {})
 };

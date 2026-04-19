@@ -64,6 +64,7 @@ export const ApiPath = {
   MODE: '/api/mode',
   TEST_PARSE: '/api/test-parse',
   FILE_CHOOSER: '/api/file-chooser',
+  FILE_READ: '/api/file-read',
   HEARTBEAT: '/api/heartbeat',
   SHUTDOWN: '/api/shutdown'
 } as const;
