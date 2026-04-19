@@ -4,20 +4,22 @@ import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import black.parsebot.admin.AdminContext;
 import black.parsebot.admin.api.ConfigApi;
 import black.parsebot.admin.api.EventsApi;
+import black.parsebot.admin.api.FileChooserApi;
 import black.parsebot.admin.api.HeartbeatApi;
+import black.parsebot.admin.api.MailboxPdfsApi;
+import black.parsebot.admin.api.ModeApi;
 import black.parsebot.admin.api.ReferenceDataApi;
 import black.parsebot.admin.api.ServiceApi;
 import black.parsebot.admin.api.ShutdownApi;
 import black.parsebot.admin.api.TestParseApi;
-import black.parsebot.admin.service.ServiceManager;
 
 public final class AdminServer {
 
@@ -25,8 +27,7 @@ public final class AdminServer {
   private static final long WATCHDOG_INTERVAL_MS = 2_000;
   private static final long INITIAL_GRACE_MS = 60_000;
 
-  private final ServiceManager serviceManager;
-  private final Path logDir;
+  private final AdminContext context;
   private final CountDownLatch shutdownLatch = new CountDownLatch(1);
 
   private HttpServer httpServer;
@@ -34,23 +35,26 @@ public final class AdminServer {
   private volatile long lastHeartbeatMs = 0;
   private volatile boolean heartbeatSeen = false;
 
-  public AdminServer(ServiceManager serviceManager, Path logDir) {
-    this.serviceManager = serviceManager;
-    this.logDir = logDir;
+  public AdminServer(AdminContext context) {
+    this.context = context;
   }
 
   public int start(int requestedPort) throws IOException {
     httpServer = HttpServer.create(new InetSocketAddress("127.0.0.1", requestedPort), 0);
     httpServer.createContext("/api/schema", new ConfigApi.SchemaHandler());
-    httpServer.createContext("/api/config", new ConfigApi.ConfigHandler(serviceManager));
-    httpServer.createContext("/api/service/install", new ServiceApi.InstallHandler(serviceManager));
-    httpServer.createContext("/api/service/uninstall", new ServiceApi.UninstallHandler(serviceManager));
-    httpServer.createContext("/api/service/status", new ServiceApi.StatusHandler(serviceManager));
-    httpServer.createContext("/api/events", new EventsApi.EventsHandler(logDir));
-    httpServer.createContext("/api/reference-data", new ReferenceDataApi.Handler(serviceManager));
-    httpServer.createContext("/api/test-parse", new TestParseApi.Handler());
+    httpServer.createContext("/api/config", new ConfigApi.ConfigHandler(context.serviceManager()));
+    httpServer.createContext("/api/service/install", new ServiceApi.InstallHandler(context.serviceManager()));
+    httpServer.createContext("/api/service/uninstall", new ServiceApi.UninstallHandler(context.serviceManager()));
+    httpServer.createContext("/api/service/status", new ServiceApi.StatusHandler(context.serviceManager()));
+    httpServer.createContext("/api/events", new EventsApi.EventsHandler(context.events()));
+    httpServer.createContext("/api/reference-data", new ReferenceDataApi.Handler(context.referenceData()));
+    httpServer.createContext("/api/email-pdfs", new MailboxPdfsApi.ListHandler(context.mailboxPdfs()));
+    httpServer.createContext("/api/email-pdf", new MailboxPdfsApi.FetchHandler(context.mailboxPdfs()));
+    httpServer.createContext("/api/test-parse", new TestParseApi.Handler(context.orderParser(), !context.demoMode()));
     httpServer.createContext("/api/heartbeat", new HeartbeatApi.Handler(this));
     httpServer.createContext("/api/shutdown", new ShutdownApi.Handler(this));
+    httpServer.createContext("/api/mode", new ModeApi.Handler(context));
+    httpServer.createContext("/api/file-chooser", new FileChooserApi.Handler(context.fileChooser()));
     httpServer.createContext("/", new StaticHandler());
     httpServer.setExecutor(null);
     httpServer.start();

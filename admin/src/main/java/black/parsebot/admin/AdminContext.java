@@ -1,0 +1,61 @@
+package black.parsebot.admin;
+
+import java.nio.file.Path;
+
+import black.parsebot.admin.config.ConfigSchema;
+import black.parsebot.admin.demo.DemoEventsSource;
+import black.parsebot.admin.demo.DemoMailboxPdfSource;
+import black.parsebot.admin.demo.DemoReferenceDataSource;
+import black.parsebot.admin.demo.DemoServiceManager;
+import black.parsebot.admin.parser.ClaudeApiOrderParser;
+import black.parsebot.admin.parser.ClaudeCliOrderParser;
+import black.parsebot.admin.parser.OrderParser;
+import black.parsebot.admin.service.ServiceManager;
+import black.parsebot.admin.service.WindowsServiceManager;
+import black.parsebot.admin.source.EventsSource;
+import black.parsebot.admin.source.FileChooser;
+import black.parsebot.admin.source.FileReferenceDataSource;
+import black.parsebot.admin.source.ImapMailboxPdfSource;
+import black.parsebot.admin.source.MailboxPdfSource;
+import black.parsebot.admin.source.ReferenceDataSource;
+import black.parsebot.admin.source.Slf4jEventsSource;
+import black.parsebot.admin.source.SwingFileChooser;
+
+public record AdminContext(
+    boolean demoMode,
+    ServiceManager serviceManager,
+    ReferenceDataSource referenceData,
+    EventsSource events,
+    MailboxPdfSource mailboxPdfs,
+    OrderParser orderParser,
+    FileChooser fileChooser
+) {
+
+  public String title() {
+    return demoMode ? ConfigSchema.DISPLAY_NAME + " (demo mode)" : ConfigSchema.DISPLAY_NAME;
+  }
+
+  public static AdminContext live(Path exePath, Path logDir) {
+    ServiceManager sm = new WindowsServiceManager(exePath);
+    return new AdminContext(
+        false,
+        sm,
+        new FileReferenceDataSource(sm),
+        new Slf4jEventsSource(logDir),
+        new ImapMailboxPdfSource(sm),
+        new ClaudeApiOrderParser(),
+        new SwingFileChooser());
+  }
+
+  public static AdminContext demo() {
+    ServiceManager sm = new DemoServiceManager();
+    return new AdminContext(
+        true,
+        sm,
+        new DemoReferenceDataSource(),
+        new DemoEventsSource(),
+        new DemoMailboxPdfSource(),
+        new ClaudeCliOrderParser(),
+        new SwingFileChooser());
+  }
+}

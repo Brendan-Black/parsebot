@@ -6,7 +6,7 @@ public final class MailConfig {
 
   private final Properties props;
 
-  MailConfig(Properties props) {
+  public MailConfig(Properties props) {
     this.props = props;
   }
 

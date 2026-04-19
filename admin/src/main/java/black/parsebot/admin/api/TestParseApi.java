@@ -4,9 +4,8 @@ import java.util.Base64;
 
 import com.sun.net.httpserver.HttpExchange;
 
+import black.parsebot.admin.parser.OrderParser;
 import black.parsebot.admin.server.JsonHandler;
-import black.parsebot.event.EventPublisher;
-import black.parsebot.parser.ClaudeClient;
 import black.parsebot.parser.PriceMatrix;
 
 public final class TestParseApi {
@@ -24,12 +23,22 @@ public final class TestParseApi {
   public record TestParseResponse(String response, long durationMs) {}
 
   public static final class Handler extends JsonHandler {
+    private final OrderParser parser;
+    private final boolean requireApiKey;
+
+    public Handler(OrderParser parser, boolean requireApiKey) {
+      this.parser = parser;
+      this.requireApiKey = requireApiKey;
+    }
+
     @Override
     protected Object handleJson(HttpExchange exchange) throws Exception {
       requireMethod(exchange, "POST");
       TestParseRequest req = readJson(exchange, TestParseRequest.class);
       if (req == null) throw new HttpException(400, "Missing request body");
-      if (req.apiKey == null || req.apiKey.isBlank()) throw new HttpException(400, "apiKey is required");
+      if (requireApiKey && (req.apiKey == null || req.apiKey.isBlank())) {
+        throw new HttpException(400, "apiKey is required");
+      }
       if (req.pdfBase64 == null || req.pdfBase64.isBlank()) throw new HttpException(400, "pdfBase64 is required");
       if (req.customerCsv == null) throw new HttpException(400, "customerCsv is required");
       if (req.productCsv == null) throw new HttpException(400, "productCsv is required");
@@ -44,11 +53,8 @@ public final class TestParseApi {
       String filename = (req.filename != null && !req.filename.isBlank()) ? req.filename : "test.pdf";
       String customRules = (req.customRules != null && !req.customRules.isBlank()) ? req.customRules : null;
 
-      EventPublisher noop = event -> {};
-      ClaudeClient client = new ClaudeClient(req.apiKey, noop);
-
       long start = System.currentTimeMillis();
-      String response = client.parsePdf(filename, pdfBytes, req.customerCsv, req.productCsv, customRules);
+      String response = parser.parsePdf(filename, pdfBytes, req.customerCsv, req.productCsv, req.apiKey, customRules);
 
       if (req.priceMatrixCsv != null && !req.priceMatrixCsv.isBlank()) {
         response = PriceMatrix.load(req.priceMatrixCsv).applyToResponse(response);

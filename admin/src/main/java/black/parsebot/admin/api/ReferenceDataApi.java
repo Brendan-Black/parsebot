@@ -1,14 +1,9 @@
 package black.parsebot.admin.api;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Map;
-
 import com.sun.net.httpserver.HttpExchange;
 
 import black.parsebot.admin.server.JsonHandler;
-import black.parsebot.config.ConfigKey;
-import black.parsebot.admin.service.ServiceManager;
+import black.parsebot.admin.source.ReferenceDataSource;
 
 public final class ReferenceDataApi {
 
@@ -21,34 +16,16 @@ public final class ReferenceDataApi {
   ) {}
 
   public static final class Handler extends JsonHandler {
-    private final ServiceManager serviceManager;
+    private final ReferenceDataSource source;
 
-    public Handler(ServiceManager serviceManager) {
-      this.serviceManager = serviceManager;
+    public Handler(ReferenceDataSource source) {
+      this.source = source;
     }
 
     @Override
     protected Object handleJson(HttpExchange exchange) {
       requireMethod(exchange, "GET");
-      Map<String, String> cfg = serviceManager.currentConfig();
-      return new ReferenceDataResponse(
-          load(cfg.get(ConfigKey.CSV_CUSTOMERS)),
-          load(cfg.get(ConfigKey.CSV_PRODUCTS)),
-          load(cfg.get(ConfigKey.CSV_PRICEMATRIX))
-      );
-    }
-
-    private static ReferenceFile load(String pathStr) {
-      if (pathStr == null || pathStr.isBlank()) return null;
-      Path path = Path.of(pathStr);
-      if (!Files.isRegularFile(path)) {
-        return new ReferenceFile(pathStr, null, "File not found");
-      }
-      try {
-        return new ReferenceFile(pathStr, Files.readString(path), null);
-      } catch (Exception e) {
-        return new ReferenceFile(pathStr, null, e.getClass().getSimpleName() + ": " + e.getMessage());
-      }
+      return source.load();
     }
   }
 

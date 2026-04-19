@@ -1,11 +1,16 @@
 import { useEffect, useState } from 'preact/hooks';
-import { api } from '../api';
+import { api, EmailAttachment, EmailMessage } from '../api';
 import { ConfigKey, Route, routeHref } from '../consts';
 
 interface SourceLabel {
   loaded: boolean;
   path: string | null;
   error: string | null;
+}
+
+interface EmailPdfPick {
+  message: number;
+  attachment: number;
 }
 
 export function TestParse() {
@@ -20,6 +25,11 @@ export function TestParse() {
   const [customerSource, setCustomerSource] = useState<SourceLabel | null>(null);
   const [productSource, setProductSource] = useState<SourceLabel | null>(null);
   const [priceMatrixSource, setPriceMatrixSource] = useState<SourceLabel | null>(null);
+  const [emailActive, setEmailActive] = useState(false);
+  const [emailMessages, setEmailMessages] = useState<EmailMessage[]>([]);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailPick, setEmailPick] = useState<EmailPdfPick | null>(null);
+  const [emailFetching, setEmailFetching] = useState(false);
   const [busy, setBusy] = useState(false);
   const [response, setResponse] = useState<string | null>(null);
   const [durationMs, setDurationMs] = useState<number | null>(null);
@@ -48,17 +58,53 @@ export function TestParse() {
         }
       })
       .catch(() => {});
+
+    api.emailPdfs()
+      .then((r) => {
+        setEmailActive(r.active);
+        setEmailMessages(r.messages);
+        setEmailError(r.error);
+      })
+      .catch((e) => {
+        setEmailError(String(e));
+      });
   }, []);
 
   const onFile = async (e: Event) => {
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
+    setEmailPick(null);
     setFilename(file.name);
     const buf = await file.arrayBuffer();
     const bytes = new Uint8Array(buf);
     setPdfBytes(bytes.length);
     setPdfBase64(bytesToBase64(bytes));
+  };
+
+  const onEmailSelect = async (e: Event) => {
+    const value = (e.target as HTMLSelectElement).value;
+    if (!value) {
+      setEmailPick(null);
+      return;
+    }
+    const [msgStr, attStr] = value.split(':');
+    const pick = { message: Number(msgStr), attachment: Number(attStr) };
+    setEmailPick(pick);
+    setEmailFetching(true);
+    setError(null);
+    try {
+      const r = await api.emailPdf(pick.message, pick.attachment);
+      setFilename(r.filename);
+      const bytes = base64ToBytes(r.pdfBase64);
+      setPdfBytes(bytes.length);
+      setPdfBase64(r.pdfBase64);
+    } catch (err) {
+      setError(`Failed to fetch PDF from email: ${err}`);
+      setEmailPick(null);
+    } finally {
+      setEmailFetching(false);
+    }
   };
 
   const onSubmit = async (e: Event) => {
@@ -94,6 +140,28 @@ export function TestParse() {
         Upload a PDF and send it through the Claude translation pipeline with the given customer and product CSVs.
         Uses the service's configured API key by default.
       </p>
+
+      {emailActive && (
+        <div class="field">
+          <label>From mailbox:</label>
+          <select
+            value={emailPick ? `${emailPick.message}:${emailPick.attachment}` : ''}
+            disabled={emailFetching}
+            onChange={onEmailSelect}>
+            <option value="">— select a PDF from the inbox —</option>
+            {emailMessages.flatMap((m) => m.attachments.map((a) => (
+              <option value={`${m.index}:${a.index}`}>
+                {formatEmailOption(m, a)}
+              </option>
+            )))}
+          </select>
+          {emailFetching && <span class="muted" style={{ marginLeft: 8 }}>fetching…</span>}
+          {emailError && <p class="error">{emailError}</p>}
+          {!emailError && emailMessages.length === 0 && (
+            <p class="muted">No messages with PDF attachments in {'INBOX'}.</p>
+          )}
+        </div>
+      )}
 
       <div class="field">
         <label>PDF:</label>
@@ -173,6 +241,21 @@ function bytesToBase64(bytes: Uint8Array): string {
     binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
   }
   return btoa(binary);
+}
+
+function base64ToBytes(b64: string): Uint8Array {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function formatEmailOption(msg: EmailMessage, att: EmailAttachment): string {
+  const subject = msg.subject || '(no subject)';
+  const sender = msg.sender || '(unknown)';
+  return `${att.filename} — ${subject} — ${sender}`;
 }
 
 function prettyJson(raw: string): string {

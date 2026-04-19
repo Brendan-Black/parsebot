@@ -59,7 +59,11 @@ export const ApiPath = {
   SERVICE_STATUS: '/api/service/status',
   EVENTS: '/api/events',
   REFERENCE_DATA: '/api/reference-data',
+  EMAIL_PDFS: '/api/email-pdfs',
+  EMAIL_PDF: '/api/email-pdf',
+  MODE: '/api/mode',
   TEST_PARSE: '/api/test-parse',
+  FILE_CHOOSER: '/api/file-chooser',
   HEARTBEAT: '/api/heartbeat',
   SHUTDOWN: '/api/shutdown'
 } as const;

@@ -148,6 +148,12 @@ textarea {
 .field.multiline { align-items: start; }
 .field label { font-size: 14px; color: #444; }
 
+.path-picker {
+  display: flex;
+  gap: 6px;
+}
+.path-picker input { flex: 1; min-width: 0; }
+
 .button-row {
   display: flex;
   gap: 8px;
@@ -193,6 +199,17 @@ details pre {
   overflow: auto;
   font-size: 12px;
   max-height: 240px;
+}
+
+.demo-banner {
+  background: #fff3cd;
+  color: #6b5a00;
+  border: 1px solid #e5d48a;
+  border-radius: 4px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  text-align: center;
 }
 
 .dryrun-toggle {

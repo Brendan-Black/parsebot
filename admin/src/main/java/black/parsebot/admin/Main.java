@@ -8,8 +8,6 @@ import java.util.List;
 
 import black.parsebot.admin.config.ConfigSchema;
 import black.parsebot.admin.server.AdminServer;
-import black.parsebot.admin.service.ServiceManager;
-import black.parsebot.admin.service.WindowsServiceManager;
 
 public class Main {
 
@@ -19,27 +17,30 @@ public class Main {
         .filter(a -> !a.startsWith("--"))
         .findFirst()
         .orElse("ui");
+    boolean demo = argList.contains("--demo");
     Path exePath = resolveExePath(argList);
     Path logDir = resolveLogDir(argList);
     int port = resolvePort(argList);
 
-    ServiceManager serviceManager = new WindowsServiceManager(exePath);
+    AdminContext context = demo
+        ? AdminContext.demo()
+        : AdminContext.live(exePath, logDir);
 
     switch (command) {
-      case "uninstall" -> System.exit(serviceManager.uninstall());
-      case "status" -> System.out.println(serviceManager.statusText());
-      case "ui", "install", "events" -> launchUi(command, port, serviceManager, logDir);
+      case "uninstall" -> System.exit(context.serviceManager().uninstall());
+      case "status" -> System.out.println(context.serviceManager().statusText());
+      case "ui", "install", "events" -> launchUi(command, port, context);
       default -> {
         System.err.println("Unknown command: " + command);
         System.err.println("Usage: admin [ui|install|uninstall|status|events] "
-            + "[--port <n>] [--exe <path>] [--logs <dir>]");
+            + "[--port <n>] [--exe <path>] [--logs <dir>] [--demo]");
         System.exit(1);
       }
     }
   }
 
-  private static void launchUi(String page, int port, ServiceManager serviceManager, Path logDir) throws Exception {
-    AdminServer server = new AdminServer(serviceManager, logDir);
+  private static void launchUi(String page, int port, AdminContext context) throws Exception {
+    AdminServer server = new AdminServer(context);
     int bound = server.start(port);
     String landing = switch (page) {
       case "install" -> "install";
@@ -47,7 +48,7 @@ public class Main {
       default -> "launcher";
     };
     String url = "http://127.0.0.1:" + bound + "/#/" + landing;
-    System.out.println("ParseBot admin UI: " + url);
+    System.out.println(context.title() + " UI: " + url);
     openBrowser(url);
     server.awaitShutdown();
     System.out.println("Shutdown complete.");

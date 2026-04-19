@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
+import { api } from './api';
 import { Launcher } from './pages/Launcher';
 import { Install } from './pages/Install';
 import { Uninstall } from './pages/Uninstall';
@@ -18,11 +19,13 @@ function currentRoute(): Route {
 
 export function App() {
 	const [route, setRoute] = useState<Route>(currentRoute());
+	const [demo, setDemo] = useState(false);
 	useHeartbeat();
 
 	useEffect(() => {
 		const onChange = () => setRoute(currentRoute());
 		window.addEventListener('hashchange', onChange);
+		api.mode().then((m) => setDemo(m.demo)).catch(() => {});
 		return () => window.removeEventListener('hashchange', onChange);
 	}, []);
 
@@ -30,8 +33,13 @@ export function App() {
 
 	return (
 		<div class="app">
+			{demo && (
+				<div class="demo-banner">
+					DEMO MODE — all data is placeholder; parsing uses the local claude CLI, not the Anthropic API.
+				</div>
+			)}
 			<header class="header">
-				<h1>ParseBot Admin</h1>
+				<h1>ParseBot Admin{demo ? ' (demo)' : ''}</h1>
 				<nav class="nav">
 					<a href={routeHref(Route.LAUNCHER)} class={navClass(Route.LAUNCHER)}>Home</a>
 					<a href={routeHref(Route.INSTALL)} class={navClass(Route.INSTALL)}>Install</a>

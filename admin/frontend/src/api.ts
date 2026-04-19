@@ -68,6 +68,35 @@ export interface ReferenceDataResponse {
   priceMatrix: ReferenceFile | null;
 }
 
+export interface ModeResponse {
+  demo: boolean;
+}
+
+export interface EmailAttachment {
+  index: number;
+  filename: string;
+  size: number;
+}
+
+export interface EmailMessage {
+  index: number;
+  subject: string;
+  sender: string;
+  date: string;
+  attachments: EmailAttachment[];
+}
+
+export interface EmailPdfsListResponse {
+  active: boolean;
+  messages: EmailMessage[];
+  error: string | null;
+}
+
+export interface EmailPdfFetchResponse {
+  filename: string;
+  pdfBase64: string;
+}
+
 export interface TestParseRequest {
   filename: string;
   pdfBase64: string;
@@ -81,6 +110,12 @@ export interface TestParseRequest {
 export interface TestParseResponse {
   response: string;
   durationMs: number;
+}
+
+export type FileChooserMode = 'file' | 'folder';
+
+export interface FileChooserResponse {
+  path: string | null;
 }
 
 async function get<T>(path: string): Promise<T> {
@@ -100,6 +135,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 }
 
 export const api = {
+  mode: () => get<ModeResponse>(ApiPath.MODE),
   schema: () => get<Schema>(ApiPath.SCHEMA),
   config: () => get<Record<string, string>>(ApiPath.CONFIG),
   install: (values: Record<string, string>, dryRun: boolean) =>
@@ -108,7 +144,12 @@ export const api = {
   status: () => get<ServiceStatus>(ApiPath.SERVICE_STATUS),
   events: () => get<EventsResponse>(ApiPath.EVENTS),
   referenceData: () => get<ReferenceDataResponse>(ApiPath.REFERENCE_DATA),
+  emailPdfs: () => get<EmailPdfsListResponse>(ApiPath.EMAIL_PDFS),
+  emailPdf: (message: number, attachment: number) =>
+    get<EmailPdfFetchResponse>(`${ApiPath.EMAIL_PDF}?message=${message}&attachment=${attachment}`),
   testParse: (req: TestParseRequest) => post<TestParseResponse>(ApiPath.TEST_PARSE, req),
+  fileChooser: (mode: FileChooserMode, initialPath: string, title: string) =>
+    post<FileChooserResponse>(ApiPath.FILE_CHOOSER, { mode, initialPath, title }),
   heartbeat: () => post<{ ok: boolean }>(ApiPath.HEARTBEAT, {}),
   shutdown: () => post<{ ok: boolean }>(ApiPath.SHUTDOWN, {})
 };
