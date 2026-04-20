@@ -13,7 +13,13 @@
       "Bash(./gradlew :service:test :check-events:test --console=plain --rerun-tasks)",
       "Bash(xargs grep *)",
       "Bash(./gradlew :admin:classes)",
-      "Bash(awk -F: '{print $3}')"
+      "Bash(awk -F: '{print $3}')",
+      "Bash(./gradlew :service:compileJava --no-daemon -q)",
+      "Bash(./gradlew compileJava --no-daemon -q)",
+      "Bash(./gradlew test *)"
+    ],
+    "ask": [
+      "Bash(git commit:*)"
     ]
   }
 }
