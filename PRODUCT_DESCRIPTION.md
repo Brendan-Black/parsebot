@@ -32,10 +32,10 @@ The service runs on a scheduled interval with graceful shutdown handling. An `Ev
 
 ## Modules
 
-ParseBot is a multi-module Gradle project with three modules:
+ParseBot is a multi-module Gradle project with three modules. The module graph is strictly layered: `admin` and `service` both depend on `shared`, and nothing else — `admin` does **not** depend on `service`.
 
-- **`shared`** — core abstractions reused by both executables: `ClaudeClient`, `PriceMatrix`, the event system (`Event`, `EventType`, `EventPublisher`), the persistence layer (`ProcessingHistoryRepository` + JSON-file implementation), and `ConfigKey` constants.
-- **`service`** — the headless daemon. Loads `AppConfig`, builds notification channels, wires the pipeline (`ParseBotService`, `MailboxReader`, `MailboxProcessor`, `SftpWriter`), and schedules both the main poll loop and the daily report-card checker.
+- **`shared`** — domain code reused by both executables: the mailbox client (`MailboxReader`, `MailConfig`, `RawMailboxData`), Claude integration (`ClaudeClient`, `PdfValidator`), the price-matrix transform (`PriceMatrix`), the event system (`Event`, `EventType`, `EventPublisher`), the persistence layer (`ProcessingHistoryRepository` + JSON-file implementation), and `ConfigKey` constants.
+- **`service`** — the headless daemon. Loads `AppConfig`, builds notification channels, wires the pipeline (`ParseBotService`, `MailboxProcessor`, `MailboxWriter`, `SftpWriter`, `SftpReader`), and schedules both the main poll loop and the daily report-card checker.
 - **`admin`** — a local web application that configures, installs, monitors, and updates the service (see **Admin Console** below). Includes an embedded HTTP server and a Preact + Vite + TypeScript frontend that is built during the Gradle build and bundled as a JAR resource.
 
 ## Per-sender Overrides

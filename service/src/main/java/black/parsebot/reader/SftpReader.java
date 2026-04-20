@@ -56,7 +56,6 @@ public class SftpReader {
       channel.connect(30_000);
       channel.cd(config.getRemoteDirectory());
 
-      @SuppressWarnings("unchecked")
       Vector<ChannelSftp.LsEntry> entries = channel.ls(".");
       for (ChannelSftp.LsEntry entry : entries) {
         if (entry.getAttrs().isDir()) {

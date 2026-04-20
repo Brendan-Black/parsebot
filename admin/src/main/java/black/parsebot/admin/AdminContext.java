@@ -1,5 +1,6 @@
 package black.parsebot.admin;
 
+import java.net.http.HttpClient;
 import java.nio.file.Path;
 
 import black.parsebot.admin.config.ConfigSchema;
@@ -52,7 +53,7 @@ public record AdminContext(
         new FileReferenceDataSource(sm),
         new Slf4jPseudoEventsSource(logDir),
         new ImapMailboxPdfSource(sm),
-        new ClaudeApiOrderParser(),
+        new ClaudeApiOrderParser(HttpClient.newHttpClient()),
         new SwingFileChooser(),
         new GitHubUpdateChecker(),
         new WindowsUpdateApplier(installDir, ConfigSchema.SERVICE_NAME, ConfigSchema.ADMIN_EXE));

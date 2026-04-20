@@ -1,6 +1,7 @@
 package black.parsebot.service;
 
 import java.io.IOException;
+import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ public class ParseBotService {
 
   private final MailboxReader mailReader;
   private final MailboxWriter mailWriter;
+  private final HttpClient httpClient;
   private final ClaudeClient claudeClient;
   private final SftpWriter sftpWriter;
   private final MailConfig mailConfig;
@@ -67,7 +69,9 @@ public class ParseBotService {
     PdfValidator pdfValidator = new DefaultPdfValidator(
         config.getClaudeConfig().getPdfMaxBytes(),
         config.getClaudeConfig().getPdfMaxPages());
-    this.claudeClient = new ClaudeClient(config.getClaudeConfig().getApiKey(), eventBus, pdfValidator);
+    this.httpClient = HttpClient.newHttpClient();
+    this.claudeClient = new ClaudeClient(httpClient, ClaudeClient.DEFAULT_API_URL,
+        config.getClaudeConfig().getApiKey(), eventBus, pdfValidator);
     ReferenceDataConfig refData = config.getReferenceDataConfig();
     this.customerCsvPath = Path.of(refData.getCustomerCsvPath());
     this.productCsvPath = Path.of(refData.getProductCsvPath());
@@ -166,6 +170,7 @@ public class ParseBotService {
 
   public void close() {
     mailReader.close();
+    httpClient.close();
   }
 
   private void onSuccess(RawMailboxData mbd, MailboxWriter mailWriter) {

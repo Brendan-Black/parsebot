@@ -20,7 +20,7 @@ public class ClaudeClient {
 
   private static final Logger log = LoggerFactory.getLogger(ClaudeClient.class);
 
-  private static final String API_URL = "https://api.anthropic.com/v1/messages";
+  public static final String DEFAULT_API_URL = "https://api.anthropic.com/v1/messages";
   private static final String MODEL = "claude-sonnet-4-20250514";
   private static final String ANTHROPIC_VERSION = "2023-06-01";
 
@@ -108,14 +108,17 @@ public class ClaudeClient {
     ]
     """;
 
+  private final String apiUrl;
   private final String apiKey;
   private final HttpClient httpClient;
   private final EventPublisher eventPublisher;
   private final PdfValidator pdfValidator;
 
-  public ClaudeClient(String apiKey, EventPublisher eventPublisher, PdfValidator pdfValidator) {
+  public ClaudeClient(HttpClient httpClient, String apiUrl, String apiKey,
+                      EventPublisher eventPublisher, PdfValidator pdfValidator) {
+    this.httpClient = httpClient;
+    this.apiUrl = apiUrl;
     this.apiKey = apiKey;
-    this.httpClient = HttpClient.newHttpClient();
     this.eventPublisher = eventPublisher;
     this.pdfValidator = pdfValidator;
   }
@@ -150,7 +153,7 @@ public class ClaudeClient {
     String requestBody = buildRequestBody(filename, base64Content, customerCsv, productCsv, systemPrompt);
 
     HttpRequest request = HttpRequest.newBuilder()
-        .uri(URI.create(API_URL))
+        .uri(URI.create(apiUrl))
         .header("Content-Type", "application/json")
         .header("x-api-key", apiKey)
         .header("anthropic-version", ANTHROPIC_VERSION)
