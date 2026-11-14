@@ -60,7 +60,9 @@ public class Main {
 				Desktop.getDesktop().browse(URI.create(url));
 				return;
 			}
-		} catch (Exception ignored) {}
+		} catch (Exception e) {
+			// No desktop integration (headless, or a service session): rundll32 below is the fallback.
+		}
 		try {
 			new ProcessBuilder("rundll32", "url.dll,FileProtocolHandler", url).start();
 		} catch (Exception e) {
@@ -96,6 +98,7 @@ public class Main {
 					return Integer.parseInt(args.get(i + 1));
 				} catch (NumberFormatException e) {
 					System.err.println("Invalid --port value: " + args.get(i + 1));
+					System.exit(2);
 				}
 			}
 		}

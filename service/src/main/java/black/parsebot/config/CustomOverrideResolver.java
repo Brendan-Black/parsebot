@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -81,8 +82,8 @@ public class CustomOverrideResolver {
 		try {
 			return Files.readString(path);
 		} catch (IOException e) {
-			log.error("Failed to read custom override file: {}", path, e);
-			return null;
+			// Falling back to the default rules would quietly process this sender's orders the wrong way.
+			throw new UncheckedIOException("reading custom override file " + path, e);
 		}
 	}
 }

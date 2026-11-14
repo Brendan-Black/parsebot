@@ -1,5 +1,6 @@
 package black.parsebot.reader;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -79,7 +80,8 @@ public class MailboxReader {
 				byte[] content = extractContent(message);
 				results.add(new RawMailboxData(subject, content, message));
 			}
-		} catch (Exception e) {
+		} catch (MessagingException | IOException e) {
+			// The next poll retries; messages read before the failure are processed now.
 			log.error("Error reading mailbox", e);
 			eventPublisher.publish(Event.create(
 				EventType.MAILBOX_READ_FAILED,
@@ -120,7 +122,7 @@ public class MailboxReader {
 		return sourceFolder;
 	}
 
-	private byte[] extractContent(Message message) throws Exception {
+	private byte[] extractContent(Message message) throws MessagingException, IOException {
 		Object content = message.getContent();
 		if (content instanceof String text) {
 			return text.getBytes();

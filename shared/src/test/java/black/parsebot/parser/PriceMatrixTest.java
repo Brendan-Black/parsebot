@@ -9,6 +9,7 @@ import java.util.OptionalDouble;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PriceMatrixTest {
@@ -138,24 +139,23 @@ class PriceMatrixTest {
 	}
 
 	@Test
-	void invalidRuleTypeIsSkipped() {
-		PriceMatrix pm = PriceMatrix.load("""
+	void invalidRuleTypeIsRejectedWithItsRow() {
+		IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> PriceMatrix.load("""
 			customer_number,product_id,type,value
 			CUST1,PROD1,bogus,10
 			CUST2,PROD2,fixed,20
-			""");
-		assertTrue(pm.transform("CUST1", "PROD1", 0.0).isEmpty());
-		assertEquals(20.0, pm.transform("CUST2", "PROD2", 0.0).getAsDouble(), EPS);
+			"""));
+		assertTrue(e.getMessage().contains("row 2"), e.getMessage());
 	}
 
 	@Test
-	void malformedRowIsSkipped() {
-		PriceMatrix pm = PriceMatrix.load("""
+	void malformedRowIsRejectedWithItsRow() {
+		IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> PriceMatrix.load("""
 			customer_number,product_id,type,value
 			CUST1,PROD1
 			CUST2,PROD2,fixed,20
-			""");
-		assertEquals(20.0, pm.transform("CUST2", "PROD2", 0.0).getAsDouble(), EPS);
+			"""));
+		assertTrue(e.getMessage().contains("row 2"), e.getMessage());
 	}
 
 	@Test
@@ -170,14 +170,13 @@ class PriceMatrixTest {
 	}
 
 	@Test
-	void nonNumericValueIsSkipped() {
-		PriceMatrix pm = PriceMatrix.load("""
+	void nonNumericValueIsRejectedWithItsRow() {
+		IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> PriceMatrix.load("""
 			customer_number,product_id,type,value
 			CUST1,PROD1,fixed,not-a-number
 			CUST2,PROD2,fixed,7
-			""");
-		assertTrue(pm.transform("CUST1", "PROD1", 0.0).isEmpty());
-		assertEquals(7.0, pm.transform("CUST2", "PROD2", 0.0).getAsDouble(), EPS);
+			"""));
+		assertTrue(e.getMessage().contains("row 2"), e.getMessage());
 	}
 
 	@Test
@@ -266,10 +265,10 @@ class PriceMatrixTest {
 	}
 
 	@Test
-	void applyToResponseMalformedJsonReturnsUnchanged() {
+	void applyToResponseRejectsMalformedJson() {
+		// Returning it unchanged would send out unadjusted prices.
 		PriceMatrix pm = PriceMatrix.load("customer_number,product_id,type,value\n*,*,fixed,1\n");
-		String garbage = "not-json";
-		assertEquals(garbage, pm.applyToResponse(garbage));
+		assertThrows(IllegalArgumentException.class, () -> pm.applyToResponse("not-json"));
 	}
 
 	@Test

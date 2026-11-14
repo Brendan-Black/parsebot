@@ -63,6 +63,8 @@ public class ReportCardScheduler implements Runnable {
 			lastReportDate = today;
 			log.info("Report card generated for {}", today);
 		} catch (Exception e) {
+			// Caught, not thrown: a task that throws is never run by its ScheduledExecutorService again. lastReportDate is
+			// only set on success, so the next tick retries.
 			log.error("Failed to generate report card", e);
 		}
 	}

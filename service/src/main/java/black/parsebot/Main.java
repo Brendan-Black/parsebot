@@ -1,6 +1,7 @@
 package black.parsebot;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,8 +76,8 @@ public class Main {
 		try {
 			service = new ParseBotService(config, eventBus, processingHistory);
 		} catch (IOException e) {
-			log.error("Failed to initialize ParseBotService", e);
-			return;
+			// Thrown out of main, so the process exits non-zero and the service manager sees it failed to start.
+			throw new UncheckedIOException("initializing ParseBotService", e);
 		}
 
 		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);

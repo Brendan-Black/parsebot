@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializer;
 
@@ -65,6 +66,7 @@ public final class Slf4jPseudoPersistence<T> implements PseudoPersistence<T> {
 		files.sort(Comparator.comparing(p -> p.getFileName().toString()));
 
 		List<T> items = new ArrayList<>();
+		int malformed = 0;
 		for (Path file : files) {
 			for (String line : Files.readAllLines(file)) {
 				int idx = line.indexOf(marker);
@@ -75,10 +77,14 @@ public final class Slf4jPseudoPersistence<T> implements PseudoPersistence<T> {
 					T item = gson.fromJson(json, type);
 					if (item != null)
 						items.add(item);
-				} catch (Exception e) {
-					// Skip malformed lines
+				} catch (JsonParseException e) {
+					// A line cut short (a crash mid-write, a log rotation) loses that one event, not the rest: skip it, but say so.
+					malformed++;
 				}
 			}
+		}
+		if (malformed > 0) {
+			log.warn("Skipped {} malformed {} line(s) in {}", malformed, marker.strip(), logDir);
 		}
 		return items;
 	}

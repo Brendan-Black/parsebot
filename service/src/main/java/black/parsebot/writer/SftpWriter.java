@@ -1,6 +1,7 @@
 package black.parsebot.writer;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -30,10 +31,12 @@ public class SftpWriter {
 		this.eventBus = eventBus;
 	}
 
-	public void write(List<TransformedData> dataList) {
+	/**
+	 * Uploads every file, or throws: the caller only marks a message processed once its output has been delivered.
+	 */
+	public void write(List<TransformedData> dataList) throws IOException {
 		if (config.getHost().isBlank()) {
-			log.warn("SFTP host not configured, skipping upload");
-			return;
+			throw new IOException("SFTP host not configured, so " + dataList.size() + " output file(s) have nowhere to go");
 		}
 
 		Session session = null;
@@ -78,6 +81,7 @@ public class SftpWriter {
 					"fileCount", String.valueOf(dataList.size()),
 					"error", String.valueOf(e.getMessage())
 				)));
+			throw new IOException("SFTP upload of " + dataList.size() + " file(s) to " + config.getHost() + ":" + config.getRemoteDirectory() + " failed", e);
 		} finally {
 			if (channel != null && channel.isConnected()) {
 				channel.disconnect();

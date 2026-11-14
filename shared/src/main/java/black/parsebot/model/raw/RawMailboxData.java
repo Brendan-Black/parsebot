@@ -29,7 +29,10 @@ public final class RawMailboxData extends RawData {
 	}
 
 	/**
-	 * Returns the sender's email address, or an empty string if unavailable.
+	 * Returns the sender's email address, or an empty string if the message has no From address.
+	 *
+	 * @throws IllegalStateException if the From header can't be read: processing on with no sender would skip that sender's
+	 *                               custom rules
 	 */
 	public String getSenderEmail() {
 		try {
@@ -38,7 +41,7 @@ public final class RawMailboxData extends RawData {
 				return ia.getAddress().toLowerCase();
 			}
 		} catch (MessagingException e) {
-			// fall through
+			throw new IllegalStateException("reading the sender of message \"" + getName() + "\"", e);
 		}
 		return "";
 	}

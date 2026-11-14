@@ -102,7 +102,8 @@ public class ParseBotService {
 				if (Files.exists(matrixPath)) {
 					priceMatrix = PriceMatrix.load(Files.readString(matrixPath));
 				} else {
-					log.warn("Price matrix CSV configured but not found: {}", matrixPath);
+					// Going on without it would send out unadjusted prices.
+					throw new IOException("price matrix CSV configured but not found: " + matrixPath);
 				}
 			}
 
@@ -124,8 +125,9 @@ public class ParseBotService {
 			int failCount = 0;
 
 			for (RawMailboxData email : rawData) {
+				String sender = "<unknown>";
 				try {
-					String sender = email.getSenderEmail();
+					sender = email.getSenderEmail();
 					String customRules = overrideResolver.resolveRules(sender);
 					String customProductList = overrideResolver.resolveProductList(sender);
 
@@ -148,7 +150,7 @@ public class ParseBotService {
 						"Failed to process message: " + email.getName(),
 						Map.of(
 							"messageName", email.getName() != null ? email.getName() : "<unknown>",
-							"sender", email.getSenderEmail() != null ? email.getSenderEmail() : "<unknown>",
+							"sender", sender,
 							"error", String.valueOf(e.getMessage())
 						)));
 					onFailure(email, mailWriter);

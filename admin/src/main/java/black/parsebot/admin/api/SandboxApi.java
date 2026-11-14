@@ -61,7 +61,11 @@ public final class SandboxApi {
 			String response = parser.parsePdf(filename, pdfBytes, req.customerCsv, req.productCsv, req.apiKey, customRules);
 
 			if (req.priceMatrixCsv != null && !req.priceMatrixCsv.isBlank()) {
-				response = PriceMatrix.load(req.priceMatrixCsv).applyToResponse(response);
+				try {
+					response = PriceMatrix.load(req.priceMatrixCsv).applyToResponse(response);
+				} catch (IllegalArgumentException e) {
+					throw new HttpException(400, e.getMessage());
+				}
 			}
 
 			return new SandboxResponse(response, System.currentTimeMillis() - start);

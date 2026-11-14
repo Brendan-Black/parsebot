@@ -1,6 +1,7 @@
 package black.parsebot.admin.update;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.io.InputStream;
 import java.util.Properties;
 
@@ -56,7 +57,8 @@ public final class VersionInfo {
 			p.load(in);
 			return p.getProperty("version", "0.0.0");
 		} catch (IOException e) {
-			return "0.0.0";
+			// "0.0.0" here would make every release look newer, and the updater offer it.
+			throw new UncheckedIOException("reading the bundled version.properties", e);
 		}
 	}
 

@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +47,11 @@ public class PriceMatrix {
 		this.rules = List.copyOf(rules);
 	}
 
+	/**
+	 * Parses the matrix. A row that can't be read is an error, not skipped: a skipped rule means wrong prices go out.
+	 *
+	 * @throws IllegalArgumentException naming the first row that can't be read
+	 */
 	public static PriceMatrix load(String csv) {
 		List<Rule> rules = new ArrayList<>();
 		String[] lines = csv.split("\r?\n");
@@ -55,15 +61,14 @@ public class PriceMatrix {
 				continue;
 			String[] parts = splitCsvLine(line);
 			if (parts.length < 4) {
-				log.warn("Skipping malformed price matrix row {}: '{}'", i + 1, line);
-				continue;
+				throw new IllegalArgumentException("price matrix row " + (i + 1) + " has " + parts.length + " columns, expected 4: '" + line + "'");
 			}
 			try {
 				RuleType type = RuleType.fromString(parts[2]);
 				double value = Double.parseDouble(parts[3].trim());
 				rules.add(new Rule(parts[0].trim(), parts[1].trim(), type, value));
 			} catch (IllegalArgumentException e) {
-				log.warn("Skipping invalid price matrix row {}: {}", i + 1, e.getMessage());
+				throw new IllegalArgumentException("price matrix row " + (i + 1) + ": " + e.getMessage() + ": '" + line + "'", e);
 			}
 		}
 		log.info("Loaded price matrix with {} rules", rules.size());
@@ -88,9 +93,9 @@ public class PriceMatrix {
 		JsonObject response;
 		try {
 			response = JsonParser.parseString(responseJson).getAsJsonObject();
-		} catch (Exception e) {
-			log.warn("Failed to parse response JSON for price matrix application: {}", e.getMessage());
-			return responseJson;
+		} catch (JsonParseException | IllegalStateException e) {
+			// Returning it unchanged would send out unadjusted prices.
+			throw new IllegalArgumentException("applying the price matrix: the response isn't a JSON object", e);
 		}
 
 		JsonArray content = response.getAsJsonArray("content");

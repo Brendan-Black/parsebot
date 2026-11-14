@@ -87,7 +87,7 @@ public final class MailboxPdfsApi {
 		try {
 			return Integer.parseInt(s);
 		} catch (NumberFormatException e) {
-			return fallback;
+			throw new JsonHandler.HttpException(400, "not a number: " + s);
 		}
 	}
 

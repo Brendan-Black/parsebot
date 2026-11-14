@@ -15,4 +15,8 @@ public final class TestConfigs {
 			p.setProperty(ConfigKey.EVENTS_REPORT_TIME, reportTime);
 		return new EventsConfig(p);
 	}
+
+	public static SftpConfig sftpConfig(Properties p) {
+		return new SftpConfig(p);
+	}
 }
