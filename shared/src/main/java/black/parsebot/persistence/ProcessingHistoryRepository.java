@@ -5,5 +5,5 @@ import java.util.UUID;
 
 public interface ProcessingHistoryRepository extends Repository<ProcessingRecord, UUID> {
 
-  List<ProcessingRecord> findRecentByEmailAddress(String emailAddress, int limit);
+	List<ProcessingRecord> findRecentByEmailAddress(String emailAddress, int limit);
 }

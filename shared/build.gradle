@@ -1,5 +1,7 @@
 plugins {
   id 'java-library'
+  // Formatting and compiler warnings, checked by `check`: https://github.com/Brendan-Black/black-java
+  id 'black.java-standards' version '1.2.0'
 }
 
 java {

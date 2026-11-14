@@ -4,7 +4,7 @@ import java.util.List;
 
 public interface UpdateChecker {
 
-  String currentVersion();
+	String currentVersion();
 
-  List<ReleaseInfo> listReleases() throws Exception;
+	List<ReleaseInfo> listReleases() throws Exception;
 }

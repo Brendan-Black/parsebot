@@ -10,59 +10,63 @@ import black.parsebot.parser.PriceMatrix;
 
 public final class SandboxApi {
 
-  public record SandboxRequest(
-      String filename,
-      String pdfBase64,
-      String customerCsv,
-      String productCsv,
-      String apiKey,
-      String customRules,
-      String priceMatrixCsv
-  ) {}
+	public record SandboxRequest(
+		String filename,
+		String pdfBase64,
+		String customerCsv,
+		String productCsv,
+		String apiKey,
+		String customRules,
+		String priceMatrixCsv
+	) {}
 
-  public record SandboxResponse(String response, long durationMs) {}
+	public record SandboxResponse(String response, long durationMs) {}
 
-  public static final class Handler extends JsonHandler {
-    private final OrderParser parser;
-    private final boolean requireApiKey;
+	public static final class Handler extends JsonHandler {
+		private final OrderParser parser;
+		private final boolean requireApiKey;
 
-    public Handler(OrderParser parser, boolean requireApiKey) {
-      this.parser = parser;
-      this.requireApiKey = requireApiKey;
-    }
+		public Handler(OrderParser parser, boolean requireApiKey) {
+			this.parser = parser;
+			this.requireApiKey = requireApiKey;
+		}
 
-    @Override
-    protected Object handleJson(HttpExchange exchange) throws Exception {
-      requireMethod(exchange, "POST");
-      SandboxRequest req = readJson(exchange, SandboxRequest.class);
-      if (req == null) throw new HttpException(400, "Missing request body");
-      if (requireApiKey && (req.apiKey == null || req.apiKey.isBlank())) {
-        throw new HttpException(400, "apiKey is required");
-      }
-      if (req.pdfBase64 == null || req.pdfBase64.isBlank()) throw new HttpException(400, "pdfBase64 is required");
-      if (req.customerCsv == null) throw new HttpException(400, "customerCsv is required");
-      if (req.productCsv == null) throw new HttpException(400, "productCsv is required");
+		@Override
+		protected Object handleJson(HttpExchange exchange) throws Exception {
+			requireMethod(exchange, "POST");
+			SandboxRequest req = readJson(exchange, SandboxRequest.class);
+			if (req == null)
+				throw new HttpException(400, "Missing request body");
+			if (requireApiKey && (req.apiKey == null || req.apiKey.isBlank())) {
+				throw new HttpException(400, "apiKey is required");
+			}
+			if (req.pdfBase64 == null || req.pdfBase64.isBlank())
+				throw new HttpException(400, "pdfBase64 is required");
+			if (req.customerCsv == null)
+				throw new HttpException(400, "customerCsv is required");
+			if (req.productCsv == null)
+				throw new HttpException(400, "productCsv is required");
 
-      byte[] pdfBytes;
-      try {
-        pdfBytes = Base64.getDecoder().decode(req.pdfBase64);
-      } catch (IllegalArgumentException e) {
-        throw new HttpException(400, "Invalid base64 PDF content");
-      }
+			byte[] pdfBytes;
+			try {
+				pdfBytes = Base64.getDecoder().decode(req.pdfBase64);
+			} catch (IllegalArgumentException e) {
+				throw new HttpException(400, "Invalid base64 PDF content");
+			}
 
-      String filename = (req.filename != null && !req.filename.isBlank()) ? req.filename : "test.pdf";
-      String customRules = (req.customRules != null && !req.customRules.isBlank()) ? req.customRules : null;
+			String filename = (req.filename != null && !req.filename.isBlank()) ? req.filename : "test.pdf";
+			String customRules = (req.customRules != null && !req.customRules.isBlank()) ? req.customRules : null;
 
-      long start = System.currentTimeMillis();
-      String response = parser.parsePdf(filename, pdfBytes, req.customerCsv, req.productCsv, req.apiKey, customRules);
+			long start = System.currentTimeMillis();
+			String response = parser.parsePdf(filename, pdfBytes, req.customerCsv, req.productCsv, req.apiKey, customRules);
 
-      if (req.priceMatrixCsv != null && !req.priceMatrixCsv.isBlank()) {
-        response = PriceMatrix.load(req.priceMatrixCsv).applyToResponse(response);
-      }
+			if (req.priceMatrixCsv != null && !req.priceMatrixCsv.isBlank()) {
+				response = PriceMatrix.load(req.priceMatrixCsv).applyToResponse(response);
+			}
 
-      return new SandboxResponse(response, System.currentTimeMillis() - start);
-    }
-  }
+			return new SandboxResponse(response, System.currentTimeMillis() - start);
+		}
+	}
 
-  private SandboxApi() {}
+	private SandboxApi() {}
 }

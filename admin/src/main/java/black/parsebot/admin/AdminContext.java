@@ -29,47 +29,47 @@ import black.parsebot.admin.update.UpdateChecker;
 import black.parsebot.admin.update.WindowsUpdateApplier;
 
 public record AdminContext(
-    boolean demoMode,
-    ServiceManager serviceManager,
-    ReferenceDataSource referenceData,
-    EventsSource events,
-    MailboxPdfSource mailboxPdfs,
-    OrderParser orderParser,
-    FileChooser fileChooser,
-    UpdateChecker updateChecker,
-    UpdateApplier updateApplier
+	boolean demoMode,
+	ServiceManager serviceManager,
+	ReferenceDataSource referenceData,
+	EventsSource events,
+	MailboxPdfSource mailboxPdfs,
+	OrderParser orderParser,
+	FileChooser fileChooser,
+	UpdateChecker updateChecker,
+	UpdateApplier updateApplier
 ) {
 
-  public String title() {
-    return demoMode ? ConfigSchema.DISPLAY_NAME + " (demo mode)" : ConfigSchema.DISPLAY_NAME;
-  }
+	public String title() {
+		return demoMode ? ConfigSchema.DISPLAY_NAME + " (demo mode)" : ConfigSchema.DISPLAY_NAME;
+	}
 
-  public static AdminContext live(Path exePath, Path logDir) {
-    ServiceManager sm = new WindowsServiceManager(exePath);
-    Path installDir = exePath.getParent();
-    return new AdminContext(
-        false,
-        sm,
-        new FileReferenceDataSource(sm),
-        new Slf4jPseudoEventsSource(logDir),
-        new ImapMailboxPdfSource(sm),
-        new ClaudeApiOrderParser(HttpClient.newHttpClient()),
-        new SwingFileChooser(),
-        new GitHubUpdateChecker(),
-        new WindowsUpdateApplier(installDir, ConfigSchema.SERVICE_NAME, ConfigSchema.ADMIN_EXE));
-  }
+	public static AdminContext live(Path exePath, Path logDir) {
+		ServiceManager sm = new WindowsServiceManager(exePath);
+		Path installDir = exePath.getParent();
+		return new AdminContext(
+			false,
+			sm,
+			new FileReferenceDataSource(sm),
+			new Slf4jPseudoEventsSource(logDir),
+			new ImapMailboxPdfSource(sm),
+			new ClaudeApiOrderParser(HttpClient.newHttpClient()),
+			new SwingFileChooser(),
+			new GitHubUpdateChecker(),
+			new WindowsUpdateApplier(installDir, ConfigSchema.SERVICE_NAME, ConfigSchema.ADMIN_EXE));
+	}
 
-  public static AdminContext demo() {
-    ServiceManager sm = new DemoServiceManager();
-    return new AdminContext(
-        true,
-        sm,
-        new DemoReferenceDataSource(),
-        new DemoEventsSource(),
-        new DemoMailboxPdfSource(),
-        new ClaudeCliOrderParser(),
-        new SwingFileChooser(),
-        new DemoUpdateChecker(),
-        new DemoUpdateApplier());
-  }
+	public static AdminContext demo() {
+		ServiceManager sm = new DemoServiceManager();
+		return new AdminContext(
+			true,
+			sm,
+			new DemoReferenceDataSource(),
+			new DemoEventsSource(),
+			new DemoMailboxPdfSource(),
+			new ClaudeCliOrderParser(),
+			new SwingFileChooser(),
+			new DemoUpdateChecker(),
+			new DemoUpdateApplier());
+	}
 }

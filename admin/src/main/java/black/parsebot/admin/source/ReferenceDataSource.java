@@ -4,5 +4,5 @@ import black.parsebot.admin.api.ReferenceDataApi.ReferenceDataResponse;
 
 public interface ReferenceDataSource {
 
-  ReferenceDataResponse load();
+	ReferenceDataResponse load();
 }

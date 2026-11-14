@@ -5,7 +5,7 @@ import black.parsebot.admin.api.MailboxPdfsApi.ListResponse;
 
 public interface MailboxPdfSource {
 
-  ListResponse list();
+	ListResponse list();
 
-  FetchResponse fetch(int messageIndex, int attachmentIndex);
+	FetchResponse fetch(int messageIndex, int attachmentIndex);
 }

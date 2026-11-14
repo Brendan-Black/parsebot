@@ -4,21 +4,22 @@ import java.util.Map;
 
 public interface ServiceManager {
 
-  Map<String, String> currentConfig();
+	Map<String, String> currentConfig();
 
-  InstallResult install(Map<String, String> values, boolean dryRun);
+	InstallResult install(Map<String, String> values, boolean dryRun);
 
-  int uninstall();
+	int uninstall();
 
-  ServiceStatus status();
+	ServiceStatus status();
 
-  default String statusText() {
-    ServiceStatus s = status();
-    if (!s.installed()) return "Not installed.";
-    return s.running() ? "Installed and running." : "Installed (not running).";
-  }
+	default String statusText() {
+		ServiceStatus s = status();
+		if (!s.installed())
+			return "Not installed.";
+		return s.running() ? "Installed and running." : "Installed (not running).";
+	}
 
-  record InstallResult(boolean success, String message, String binPath) {}
+	record InstallResult(boolean success, String message, String binPath) {}
 
-  record ServiceStatus(boolean installed, boolean running, String detail) {}
+	record ServiceStatus(boolean installed, boolean running, String detail) {}
 }
